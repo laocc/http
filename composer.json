@@ -1,0 +1,20 @@
+{
+  "name": "laocc/http",
+  "description": "http request",
+  "homepage": "https://github.com/laocc/http",
+  "authors": [
+    {
+      "name": "fazo",
+      "email": "fazo@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">7.0",
+    "ext-json": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "esp\\http\\": "src/"
+    }
+  }
+}
