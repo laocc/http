@@ -4,31 +4,7 @@ declare(strict_types=1);
 namespace esp\http;
 
 
-function is_ip(string $value, string $which = 'ipv4'): bool
-{
-    if (empty($value) or !is_string($value)) return false;
-    switch (strtolower($which)) {
-        case 'ipv4':
-            $which = FILTER_FLAG_IPV4;
-            break;
-        case 'ipv6':
-            $which = FILTER_FLAG_IPV6;
-            break;
-        default:
-            $which = NULL;
-            break;
-    }
-    return (bool)filter_var($value, FILTER_VALIDATE_IP, $which);
-}
-
-function text(string $html, int $star = null, int $stop = null): string
-{
-    if ($stop === null) list($star, $stop) = [0, $star];
-    $v = preg_replace(['/\&lt\;(.*?)\&gt\;/is', '/&[a-z]+?\;/', '/<(.*?)>/is', '/[\s\x20\xa\xd\'\"\`]/is'], '', trim($html));
-    $v = str_ireplace(["\a", "\b", "\f", "\s", "\t", "\n", "\r", "\v", "\0", "\h", '  ', " ", "　", "	", ' '], '', $v);
-    return htmlentities(mb_substr($v, $star, $stop, 'utf-8'));
-}
-
+use function esp\http\helper\is_ip;
 
 final class Http
 {
@@ -54,7 +30,12 @@ final class Http
 
     public function debug(): array
     {
-        return ['url' => $this->url, 'option' => $this->option, 'data' => $this->data, 'value' => $this->value];
+        return [
+            'url' => $this->url,
+            'option' => $this->option,
+            'data' => $this->data,
+            'value' => $this->value
+        ];
     }
 
 
@@ -98,57 +79,15 @@ final class Http
     }
 
     /**
-     * get方式读取
+     * 设置解析目标数据的方法
      * @param string $encode
-     * @return array|mixed
+     * @return $this
      */
-    public function get(string $encode = '')
+    public function encode(string $encode = '')
     {
         if (!in_array($encode, ['json', 'xml', 'html', 'text', 'auto'])) $encode = '';
         $this->option['encode'] = $encode;
-        $this->option['type'] = 'get';
-        $this->value = $this->request($this->url, null, $this->option);
-        if ($this->value['error']) return $this->value['message'];
-        if (!$encode) return $this->value;
-        if (in_array($encode, ['json', 'xml', 'auto'])) return $this->value['array'] ?: [];
-        if ($encode === 'text') return text($this->value['html']);
-        return $this->value['html'];
-    }
-
-    /**
-     * post方式
-     * @param string $encode
-     * @return array|mixed
-     */
-    public function post(string $encode = '')
-    {
-        if (!in_array($encode, ['json', 'xml', 'html', 'text', 'auto'])) $encode = '';
-        $this->option['encode'] = $encode;
-        $this->option['type'] = 'post';
-        $this->value = $this->request($this->url, $this->data, $this->option);
-        if ($this->value['error']) return $this->value['message'];
-        if (!$encode) return $this->value;
-        if (in_array($encode, ['json', 'xml', 'auto'])) return $this->value['array'] ?: [];
-        if ($encode === 'text') return text($this->value['html']);
-        return $this->value['html'];
-    }
-
-    /**
-     * 上传文件，需要同时用files/field附加文件和指定表单文件名
-     * @param string $encode
-     * @return array|mixed
-     */
-    public function upload(string $encode = '')
-    {
-        if (!in_array($encode, ['json', 'xml', 'html', 'text', 'auto'])) $encode = '';
-        $this->option['encode'] = $encode;
-        $this->option['type'] = 'upload';
-        $this->value = $this->request($this->url, null, $this->option);
-        if ($this->value['error']) return $this->value['message'];
-        if (!$encode) return $this->value;
-        if (in_array($encode, ['json', 'xml', 'auto'])) return $this->value['array'] ?: [];
-        if ($encode === 'text') return text($this->value['html']);
-        return $this->value['html'];
+        return $this;
     }
 
     /**
@@ -249,7 +188,7 @@ final class Http
      * @param int $num
      * @return $this
      */
-    public function redirect(int $num): Http
+    public function redirect(int $num = 2): Http
     {
         $this->option['redirect'] = $num;
         return $this;
@@ -433,10 +372,44 @@ final class Http
 
 
     /**
+     * get方式读取
      * @param string $url
-     * @param null $data
-     * @param array $option
-     * @return array
+     * @return Result
+     */
+    public function get(string $url = '')
+    {
+        if ($url) $this->url = $url;
+        $this->option['type'] = 'get';
+        return $this->request();
+    }
+
+    /**
+     * post方式
+     * @param string $url
+     * @return array|mixed
+     */
+    public function post(string $url = '')
+    {
+        $this->option['type'] = 'post';
+        if ($url) $this->url = $url;
+        return $this->request();
+    }
+
+    /**
+     * 上传文件，需要同时用files/field附加文件和指定表单文件名
+     * @param string $url
+     * @return array|mixed
+     */
+    public function upload(string $url = '')
+    {
+        $this->option['type'] = 'upload';
+        if ($url) $this->url = $url;
+        return $this->request();
+    }
+
+
+    /**
+     * @return Result
      *
      * $option['type']      请求方式，get,post,upload
      * $option['port']      对方端口
@@ -456,20 +429,16 @@ final class Http
      * $option['lang']      语言，cn或en
      * $option['ssl']       SSL检查等级，0，1或2
      */
-    public static function request(string $url, $data = null, array $option = [])
+    private function request()
     {
-        $response = [];
-        $response['error'] = 100;
-        $response['message'] = '';
-        $response['html'] = '';
-        $response['array'] = [];
+        $result = new Result();
+        $option = $this->option;
+        $url = $this->url;
 
         if (empty($url)) {
-            $response['message'] = '目标API为空';
-            return $response;
+            return $result->setError('目标API为空');
         }
 
-        if (is_array($data) and empty($option)) [$data, $option] = [null, $data];
         if (!isset($option['headers'])) $option['headers'] = array();
         if (!is_array($option['headers'])) $option['headers'] = [$option['headers']];
 
@@ -482,16 +451,12 @@ final class Http
             $cOption[CURLOPT_FAILONERROR] = true;//当 HTTP 状态码大于等于 400，TRUE 将将显示错误详情。 默认情况下将返回页面，忽略 HTTP 代码。
         }
 
-//        if (isset($option['port'])) $cOption[CURLOPT_PORT] = intval($option['port']);      //端口
-
         if (isset($option['host'])) {
             if (is_array($option['host'])) {
                 $cOption[CURLOPT_RESOLVE] = $option['host'];
             } else {
-                if (!is_ip($option['host'])) {
-                    $response['message'] = 'Host必须是IP格式';
-                    return $response;
-                }
+                if (!is_ip($option['host'])) return $result->setError('Host必须是IP格式');
+
                 $urlDom = explode('/', $url);
                 if (strpos($urlDom[2], ':')) {//将端口移到port中
                     $dom = explode(':', $urlDom[2]);
@@ -530,11 +495,9 @@ final class Http
             $cOption[CURLOPT_POSTREDIR] = 1;//什么情况下需要再次 HTTP POST 到重定向网址:1 (301 永久重定向), 2 (302 Found) 和 4 (303 See Other)
             $cOption[CURLOPT_FOLLOWLOCATION] = true;//根据服务器返回 HTTP 头中的 "Location: " 重定向
             $cOption[CURLOPT_AUTOREFERER] = true;//根据 Location: 重定向时，自动设置 header 中的Referer:信息
-            $cOption[CURLOPT_UNRESTRICTED_AUTH] = true;//重定向时，时继续发送用户名和密码信息，哪怕主机名已改变
+            $cOption[CURLOPT_UNRESTRICTED_AUTH] = true;//重定向时，继续发送用户名和密码信息，哪怕主机名已改变
         }
 
-        $cOption[CURLOPT_URL] = $url;                                                      //接收页
-        $cOption[CURLOPT_FRESH_CONNECT] = true;                                            //强制新连接，不用缓存中的
 
         if (isset($option['ip'])) {     //指定客户端IP
             $option['headers'][] = "CLIENT-IP: {$option['ip']}";
@@ -559,21 +522,24 @@ final class Http
 
         $option['type'] = strtoupper($option['type'] ?? 'get');
         if (!in_array($option['type'], ['GET', 'POST', 'PUT', 'HEAD', 'DELETE', 'UPLOAD'])) $option['type'] = 'GET';
+
         switch ($option['type']) {
             case "GET" :
                 $cOption[CURLOPT_HTTPGET] = true;
-                if (!empty($data)) {//GET时，需格式化数据为字符串
-                    if (is_array($data)) $data = http_build_query($data);
-                    $url .= (!strpos($url, '?') ? '?' : '&') . $data;
+                if (!empty($this->data)) {//GET时，需格式化数据为字符串
+                    if (is_array($this->data)) {
+                        $url .= (!strpos($url, '?') ? '?' : '&') . http_build_query($this->data);
+                        $this->data = null;
+                    }
                 }
                 break;
 
             case "POST":
-                if (is_array($data)) $data = json_encode($data, 256 | 64);
+                if (is_array($this->data)) $this->data = json_encode($this->data, 256 | 64);
 //                $option['headers'][] = "X-HTTP-Method-Override: POST";
                 $option['headers'][] = "Expect: ";  //post大于1024时，会带100 ContinueHTTP标头的请求，加此指令禁止
                 $cOption[CURLOPT_POST] = true;      //类型为：application/x-www-form-urlencoded
-                $cOption[CURLOPT_POSTFIELDS] = $data;
+                $cOption[CURLOPT_POSTFIELDS] = $this->data;
                 break;
 
             case 'UPLOAD':
@@ -581,10 +547,10 @@ final class Http
 //                $option['headers'][] = "X-HTTP-Method-Override: POST";
 //                $option['headers'][] = "Content-Type: multipart/form-data; boundary=-------------" . uniqid();
 
-                if (!is_array($data)) {
-                    $response['message'] = '上传数据只能为数组，被上传的文件置于data中';
-                    return $response;
+                if (!is_array($this->data)) {
+                    return $result->setError('上传数据只能为数组，被上传的文件置于data中');
                 }
+
 //                if (isset($data['files'])) {
 //                    foreach ($data['files'] as $fil => $file) {
 //                        $data[$field] = new \CURLFile($file);
@@ -593,7 +559,7 @@ final class Http
 //                    unset($data['files']);
 //                }
                 $cOption[CURLOPT_POST] = true;
-                $cOption[CURLOPT_POSTFIELDS] = $data;
+                $cOption[CURLOPT_POSTFIELDS] = $this->data;
                 break;
 
             case "HEAD" :   //这三种不常用，使用前须确认对方是否接受
@@ -618,23 +584,36 @@ final class Http
                 $cOption[CURLOPT_PROXY] = $option['proxy'];
             }
         }
-        if (isset($option['referer']) and $option['referer']) $cOption[CURLOPT_REFERER] = $option['referer'];//来源页
-        if (isset($option['gzip']) and $option['gzip']) {//有压缩
+
+        if (isset($option['referer']) and $option['referer']) { //来源页
+            $cOption[CURLOPT_REFERER] = $option['referer'];
+        }
+
+        if (isset($option['gzip']) and $option['gzip']) {   //有压缩
             $option['headers'][] = "Accept-Encoding: gzip, deflate";
             $cOption[CURLOPT_ENCODING] = "gzip, deflate";
         }
+
         if (!empty($option['headers'])) $cOption[CURLOPT_HTTPHEADER] = $option['headers'];     //头信息
-        if (isset($option['ua'])) $option['agent'] = $option['ua'];
+
+        if (isset($option['ua'])) {
+            $option['agent'] = $option['ua'];
+        } else {
+            $option['agent'] = 'EspHttpClient/cURL';
+        }
+
         if (isset($option['agent'])) {
             $cOption[CURLOPT_USERAGENT] = $option['agent'];
         }
 
+        $cOption[CURLOPT_URL] = $url;            //接收页
         $cOption[CURLOPT_HEADER] = (isset($option['transfer']) and $option['transfer']);        //带回头信息
         $cOption[CURLOPT_DNS_CACHE_TIMEOUT] = 120;                    //内存中保存DNS信息，默认120秒
         $cOption[CURLOPT_CONNECTTIMEOUT] = $option['wait'] ?? 10;     //在发起连接前等待的时间，如果设置为0，则无限等待
         $cOption[CURLOPT_TIMEOUT] = ($option['timeout'] ?? 10);       //允许执行的最长秒数，若用毫秒级，用CURLOPT_TIMEOUT_MS
         $cOption[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;              //指定使用IPv4解析
         $cOption[CURLOPT_RETURNTRANSFER] = true;                      //返回文本流，若不指定则是直接打印
+        $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
 
         if (strtoupper(substr($url, 0, 5)) === "HTTPS") {
 
@@ -670,123 +649,60 @@ final class Http
 
         $cURL = curl_init();   //初始化一个cURL会话，若出错，则退出。
         if ($cURL === false) {
-            $response['message'] = 'cUrl初始化错误';
-            return $response;
+            return $result->setError('cURL初始化错误');
         }
-        if ($option['type'] === 'POST') {
-            $response['post'] = $data;
-        }
-        $response['option'] = $cOption;
+
         $time = microtime(true);
         curl_setopt_array($cURL, $cOption);
-        $response['html'] = curl_exec($cURL);
-        $response['info'] = curl_getinfo($cURL);
-        $response['time_used'] = microtime(true) - $time;
-
+        $html = curl_exec($cURL);
+        $info = curl_getinfo($cURL);
+        $result->params([
+            'url' => $url,
+            'info' => $info,
+            'encode' => $option['encode'] ?? '',
+            'time' => microtime(true) - $time,
+            'post' => $this->data,
+            'option' => $cOption,
+        ]);
         if (($err = curl_errno($cURL)) > 0) {
-            $response['error'] = $err;
-            $response['message'] = curl_error($cURL);
-            return $response;
+            $result->setError(curl_error($cURL), $err);
+            curl_close($cURL);
+            return $result;
         }
         curl_close($cURL);
-        $response['error'] = 0;
-        $response['message'] = '';
 
         if (isset($option['transfer']) and $option['transfer']) {
-            $response['header'] = self::header(substr($response['html'], 0, $response['info']['header_size']));
-            $response['html'] = trim(substr($response['html'], $response['info']['header_size']));
+            $result->header(substr($html, 0, $info['header_size']));
+            $html = trim(substr($html, $info['header_size']));
         }
 
-        if ($response['info']['content_type'] && preg_match('/charset=([gbk2312]{3,6})/i', $response['info']['content_type'], $chat)) {
-            $response['html'] = mb_convert_encoding($response['html'], 'UTF-8', $chat[1]);
+        if ($info['content_type'] && preg_match('/charset=([gbk2312]{3,6})/i', $info['content_type'], $chat)) {
+            $html = mb_convert_encoding($html, 'UTF-8', $chat[1]);
 
         } else if (isset($option['charset'])) {
             if ($option['charset'] === 'auto') {
                 //自动识别gbk/gb2312转换为utf-8
-                if (preg_match('/<meta.+?charset=[\'\"]?([gbk2312]{3,6})[\'\"]?/i', $response['html'], $chat)) {
+                if (preg_match('/<meta.+?charset=[\'\"]?([gbk2312]{3,6})[\'\"]?/i', $html, $chat)) {
                     $option['charset'] = $chat[1];
                 } else {
                     $option['charset'] = null;
                 }
             }
             if (is_null($option['charset'])) {
-                $response['html'] = mb_convert_encoding($response['html'], 'UTF-8');
+                $html = mb_convert_encoding($html, 'UTF-8');
             } else {
-                $response['html'] = mb_convert_encoding($response['html'], 'UTF-8', $option['charset']);
+                $html = mb_convert_encoding($html, 'UTF-8', $option['charset']);
             }
         }
 
-        if (intval($response['info']['http_code']) !== 200) {
-            $response['error'] = intval($response['info']['http_code']);
-            if ($response['error'] === 0) $response['error'] = 10;
-            $response['message'] = $response['html'];
+
+        if (intval($info['http_code']) !== 200) {
+            $error = intval($info['http_code']);
+            if ($error === 0) $error = 10;
+            $result->setError($html, $error);
         }
 
-        if (empty($response['html'])) {
-            $response['message'] = '请求目标结果为空';
-            $response['error'] = 400;
-            return $response;
-        }
-
-        if (!isset($option['encode']) or empty($option['encode'])) return $response;
-
-
-        if ($option['encode'] === 'json') {
-            if ($response['html'][0] === '{' or $response['html'][0] === '[') {
-                $response['array'] = json_decode($response['html'], true);
-                if (empty($response['array'])) {
-                    $response['array'] = [];
-                    $response['error'] = 500;
-                }
-            } else {
-                $response['message'] = '请求结果不是json格式';
-                $response['error'] = 500;
-            }
-        } else if ($option['encode'] === 'xml') {
-            if ($response['html'][0] === '<') {
-                $response['array'] = (array)simplexml_load_string(trim($response['html']), 'SimpleXMLElement', LIBXML_NOCDATA);
-                if (empty($response['array'])) {
-                    $response['array'] = [];
-                    $response['error'] = 500;
-                }
-            } else {
-                $response['message'] = '请求结果不是xml格式';
-                $response['error'] = 500;
-            }
-        } else if ($option['encode'] === 'array') {
-            if ($response['html'][0] === '{' or $response['html'][0] === '[') {
-                $response['array'] = json_decode($response['html'], true);
-                if (empty($response['array'])) {
-                    $response['array'] = [];
-                    $response['error'] = 500;
-                }
-            } else if ($response['html'][0] === '<') {
-                $response['array'] = (array)simplexml_load_string(trim($response['html']), 'SimpleXMLElement', LIBXML_NOCDATA);
-                if (empty($response['array'])) {
-                    $response['array'] = [];
-                    $response['error'] = 500;
-                }
-            }
-        }
-
-        return $response;
+        return $result->decode($html);
     }
-
-
-    private static function header(string $text)
-    {
-        $line = explode("\r\n", trim($text));
-        $arr = array();
-        foreach ($line as $i => $ln) {
-            if (strpos($ln, ':')) {
-                $tmp = explode(':', $ln, 2);
-                $arr[strtoupper($tmp[0])] = trim($tmp[1]);
-            } else {
-                $arr[] = $ln;
-            }
-        }
-        return $arr;
-    }
-
 
 }
