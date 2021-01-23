@@ -85,8 +85,9 @@ class Result
         return $this;
     }
 
-    public function data()
+    public function data(string $key = null)
     {
+        if ($key) return $this->_data[$key] ?? null;
         return $this->_data;
     }
 
