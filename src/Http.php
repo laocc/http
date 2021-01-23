@@ -44,7 +44,7 @@ final class Http
      * @param array $rpc
      * @return $this
      */
-    public function rpc(string $uri, array $rpc): Http
+    public function rpc(array $rpc, string $uri = ''): Http
     {
         $host = ['host' => $rpc['host'], 'port' => $rpc['port'], 'ip' => $rpc['ip']];
         $this->url = sprintf('http://%s:%s/%s', $host['host'], $host['port'], ltrim($uri, '/'));
@@ -378,7 +378,13 @@ final class Http
      */
     public function get(string $url = '')
     {
-        if ($url) $this->url = $url;
+        if ($url) {
+            if ($url[0] === '/') {
+                $this->url = trim($this->url, '/') . $url;
+            } else {
+                $this->url = $url;
+            }
+        }
         $this->option['type'] = 'get';
         return $this->request();
     }
@@ -390,8 +396,14 @@ final class Http
      */
     public function post(string $url = '')
     {
+        if ($url) {
+            if ($url[0] === '/') {
+                $this->url = trim($this->url, '/') . $url;
+            } else {
+                $this->url = $url;
+            }
+        }
         $this->option['type'] = 'post';
-        if ($url) $this->url = $url;
         return $this->request();
     }
 
@@ -403,7 +415,13 @@ final class Http
     public function upload(string $url = '')
     {
         $this->option['type'] = 'upload';
-        if ($url) $this->url = $url;
+        if ($url) {
+            if ($url[0] === '/') {
+                $this->url = trim($this->url, '/') . $url;
+            } else {
+                $this->url = $url;
+            }
+        }
         return $this->request();
     }
 
