@@ -560,26 +560,6 @@ final class Http
                 $cOption[CURLOPT_POSTFIELDS] = $this->data;
                 break;
 
-            case 'UPLOAD':
-                $field = (isset($option['field']) ? $option['field'] : 'files');
-//                $option['headers'][] = "X-HTTP-Method-Override: POST";
-//                $option['headers'][] = "Content-Type: multipart/form-data; boundary=-------------" . uniqid();
-
-                if (!is_array($this->data)) {
-                    return $result->setError('上传数据只能为数组，被上传的文件置于data中');
-                }
-
-//                if (isset($data['files'])) {
-//                    foreach ($data['files'] as $fil => $file) {
-//                        $data[$field] = new \CURLFile($file);
-////                        $data["{$field}[{$fil}]"] = new \CURLFile($file);
-//                    }
-//                    unset($data['files']);
-//                }
-                $cOption[CURLOPT_POST] = true;
-                $cOption[CURLOPT_POSTFIELDS] = $this->data;
-                break;
-
             case "HEAD" :   //这三种不常用，使用前须确认对方是否接受
             case "PUT" :
             case "DELETE":
@@ -614,15 +594,9 @@ final class Http
 
         if (!empty($option['headers'])) $cOption[CURLOPT_HTTPHEADER] = $option['headers'];     //头信息
 
-        if (isset($option['ua'])) {
-            $option['agent'] = $option['ua'];
-        } else {
-            $option['agent'] = 'EspHttpClient/cURL';
-        }
-
-        if (isset($option['agent'])) {
-            $cOption[CURLOPT_USERAGENT] = $option['agent'];
-        }
+        if (isset($option['ua'])) $option['agent'] = $option['ua'];
+        if (!isset($option['agent'])) $option['agent'] = 'EspHttpClient/cURL';
+        if (!empty($option['agent'])) $cOption[CURLOPT_USERAGENT] = $option['agent'];
 
         $cOption[CURLOPT_URL] = $url;            //接收页
         $cOption[CURLOPT_HEADER] = (isset($option['transfer']) and $option['transfer']);        //带回头信息
@@ -634,19 +608,19 @@ final class Http
         $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
 
         if (strtoupper(substr($url, 0, 5)) === "HTTPS") {
-
-            if (isset($option['ssl']) and $option['ssl'] > 0) {
+            if (!isset($option['ssl'])) $option['ssl'] = 2;
+            /**
+             * 1 是检查服务器SSL证书中是否存在一个公用名(common name)。
+             *      译者注：公用名(Common Name)一般来讲就是填写你将要申请SSL证书的域名 (domain)或子域名(sub domain)。
+             * 2，会检查公用名是否存在，并且是否与提供的主机名匹配。
+             * 0 为不检查名称。
+             * 在生产环境中，这个值应该是 2（默认值）。
+             */
+            if ($option['ssl'] > 0) {
                 if ($option['ssl'] > 2) $option['ssl'] = 2;
 //                $cOption[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
                 $cOption[CURLOPT_SSL_VERIFYPEER] = true;
                 $cOption[CURLOPT_SSL_VERIFYHOST] = intval($option['ssl']);
-                /**
-                 * 1 是检查服务器SSL证书中是否存在一个公用名(common name)。
-                 *      译者注：公用名(Common Name)一般来讲就是填写你将要申请SSL证书的域名 (domain)或子域名(sub domain)。
-                 * 2，会检查公用名是否存在，并且是否与提供的主机名匹配。
-                 * 0 为不检查名称。
-                 * 在生产环境中，这个值应该是 2（默认值）。
-                 */
             } else {
                 $cOption[CURLOPT_SSL_VERIFYPEER] = false;//禁止 cURL 验证对等证书，就是不验证对方证书
                 $cOption[CURLOPT_SSL_VERIFYHOST] = 0;
@@ -659,8 +633,6 @@ final class Http
                 if (isset($option['cert']['key'])) $cOption[CURLOPT_SSLKEY] = $option['cert']['key'];
                 if (isset($option['cert']['ca'])) $cOption[CURLOPT_CAINFO] = $option['cert']['ca'];
             }
-        } else {
-//            $cOption[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
         }
 
         $cOption[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_NONE;//自动选择http版本

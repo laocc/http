@@ -135,6 +135,11 @@ class Result
                 }
 
                 break;
+            case 'html':
+            case 'text':
+            case 'txt':
+                //这几种情况，不尝试转换数组
+                break;
             default:
 
                 if ($this->_html[0] === '{' or $this->_html[0] === '[') {
@@ -159,6 +164,7 @@ class Result
 
         if (isset($this->_data['message'])) $this->_message = $this->_data['message'];
         else if (isset($this->_data['errMsg'])) $this->_message = $this->_data['errMsg'];
+        else if (isset($this->_data['errmsg'])) $this->_message = $this->_data['errmsg'];
         else if (isset($this->_data['msg'])) $this->_message = $this->_data['msg'];
         else if (empty($this->_message)) $this->_message = 'ok';
 
