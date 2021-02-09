@@ -106,6 +106,11 @@ class Result
         $this->_html = $html;
         if (empty($html)) return $this;
 
+        if (in_array($this->_encode, ['html', 'txt', 'text'])) {
+            if (empty($this->_message)) $this->_message = 'ok';
+            return $this;
+        }
+
         switch ($this->_encode) {
 
             case 'json':

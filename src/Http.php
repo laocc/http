@@ -51,6 +51,7 @@ final class Http
         $this->option['host'] = [implode(':', $host)];
         $this->option['timeout'] = 3;
         $this->option['encode'] = 'json';
+        $this->option['ua'] = 'RPC/0.1';
         return $this;
     }
 
@@ -85,7 +86,7 @@ final class Http
      */
     public function encode(string $encode = '')
     {
-        if (!in_array($encode, ['json', 'xml', 'html', 'text', 'auto'])) $encode = '';
+        if (!in_array($encode, ['json', 'xml', 'html', 'text', 'txt', 'auto'])) $encode = '';
         $this->option['encode'] = $encode;
         return $this;
     }
@@ -392,7 +393,7 @@ final class Http
     /**
      * post方式
      * @param string $url
-     * @return array|mixed
+     * @return Result
      */
     public function post(string $url = '')
     {
@@ -410,7 +411,7 @@ final class Http
     /**
      * 上传文件，需要同时用files/field附加文件和指定表单文件名
      * @param string $url
-     * @return array|mixed
+     * @return Result
      */
     public function upload(string $url = '')
     {
