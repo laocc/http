@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace esp\http;
 
-
 use function esp\http\helper\is_ip;
 
 final class Http
@@ -428,6 +427,7 @@ final class Http
 
 
     /**
+     * @param string|null $url
      * @return Result
      *
      * $option['type']      请求方式，get,post,upload
@@ -446,13 +446,13 @@ final class Http
      * $option['host']      目标域名解析成此IP
      * $option['ip']        客户端IP，相当于此cURL变成一个代理服务器
      * $option['lang']      语言，cn或en
-     * $option['ssl']       SSL检查等级，0，1或2
+     * $option['ssl']       SSL检查等级，0，1或2，默认2
      */
-    private function request()
+    public function request(string $url = null)
     {
         $result = new Result();
         $option = $this->option;
-        $url = $this->url;
+        if (is_null($url)) $url = $this->url;
 
         if (empty($url)) {
             return $result->setError('目标API为空');
