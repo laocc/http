@@ -309,12 +309,12 @@ final class Http
 
     /**
      * 带回信息流
-     * @param bool $transfer
+     * @param bool $header
      * @return $this
      */
-    public function transfer(bool $transfer = true): Http
+    public function header(bool $header = true): Http
     {
-        $this->option['transfer'] = $transfer;
+        $this->option['header'] = $header;
         return $this;
     }
 
@@ -434,7 +434,7 @@ final class Http
      * $option['port']      对方端口
      * $option['gzip']      被读取的页面有gzip压缩
      * $option['headers']   带出的头信息
-     * $option['transfer']  返回文本流全部信息，在返回的header里
+     * $option['header']    返回文本流全部信息，在返回的header里
      * $option['agent']     模拟的客户端UA信息
      * $option['proxy']     代理服务器IP
      * $option['cookies']   带出的Cookies信息，或cookies文件
@@ -600,7 +600,7 @@ final class Http
         if (!empty($option['agent'])) $cOption[CURLOPT_USERAGENT] = $option['agent'];
 
         $cOption[CURLOPT_URL] = $url;            //接收页
-        $cOption[CURLOPT_HEADER] = (isset($option['transfer']) and $option['transfer']);        //带回头信息
+        $cOption[CURLOPT_HEADER] = (isset($option['header']) and $option['header']);        //带回头信息
         $cOption[CURLOPT_DNS_CACHE_TIMEOUT] = 120;                    //内存中保存DNS信息，默认120秒
         $cOption[CURLOPT_CONNECTTIMEOUT] = $option['wait'] ?? 10;     //在发起连接前等待的时间，如果设置为0，则无限等待
         $cOption[CURLOPT_TIMEOUT] = ($option['timeout'] ?? 10);       //允许执行的最长秒数，若用毫秒级，用CURLOPT_TIMEOUT_MS
@@ -662,7 +662,7 @@ final class Http
         }
         curl_close($cURL);
 
-        if (isset($option['transfer']) and $option['transfer']) {
+        if (isset($option['header']) and $option['header']) {
             $result->header(substr($html, 0, $info['header_size']));
             $html = trim(substr($html, $info['header_size']));
         }

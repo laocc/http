@@ -2,7 +2,6 @@
 
 namespace esp\http;
 
-
 use function esp\http\helper\text;
 
 class Result
@@ -23,16 +22,26 @@ class Result
     private $_data;
 
 
+    /**
+     * @return array
+     */
     public function __debugInfo()
     {
         return $this->info();
     }
 
+    /**
+     * @return string
+     */
     public function __toString(): string
     {
         return json_encode($this->info(), 256 | 64);
     }
 
+    /**
+     * @param string|null $key
+     * @return array|mixed
+     */
     public function info(string $key = null)
     {
         $val = [
@@ -43,18 +52,28 @@ class Result
             'encode' => $this->_encode,
             'option' => $this->_option,
             'info' => $this->_info,
+            'header' => $this->_header,
+            'html' => $this->_html,
         ];
         if ($key) return $val[$key];
 
         return $val;
     }
 
+    /**
+     * @return string|null
+     */
     public function error()
     {
         if (!$this->_error) return null;
         return $this->_message;
     }
 
+    /**
+     * @param string|null $msg
+     * @param int $error
+     * @return $this
+     */
     public function setError(string $msg = null, int $error = 100)
     {
         $this->_error = $error;
@@ -62,6 +81,10 @@ class Result
         return $this;
     }
 
+    /**
+     * @param array $value
+     * @return $this
+     */
     public function params(array $value)
     {
         foreach ($value as $key => $val) {
@@ -70,6 +93,10 @@ class Result
         return $this;
     }
 
+    /**
+     * @param string|null $text
+     * @return $this|array
+     */
     public function header(string $text = null)
     {
         if (is_null($text)) return $this->_header;
@@ -85,22 +112,36 @@ class Result
         return $this;
     }
 
+    /**
+     * @param string|null $key
+     * @return mixed|null
+     */
     public function data(string $key = null)
     {
         if ($key) return $this->_data[$key] ?? null;
         return $this->_data;
     }
 
+    /**
+     * @return string
+     */
     public function html()
     {
         return $this->_html;
     }
 
+    /**
+     * @return string
+     */
     public function text()
     {
         return text($this->_html);
     }
 
+    /**
+     * @param string $html
+     * @return $this
+     */
     public function decode(string $html)
     {
         $this->_html = $html;
