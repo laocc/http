@@ -596,7 +596,7 @@ final class Http
         if (!empty($option['headers'])) $cOption[CURLOPT_HTTPHEADER] = $option['headers'];     //头信息
 
         if (isset($option['ua'])) $option['agent'] = $option['ua'];
-        if (!isset($option['agent'])) $option['agent'] = 'EspHttpClient/cURL';
+        if (!isset($option['agent'])) $option['agent'] = 'HttpClient/cURL laocc/esp laocc/http';
         if (!empty($option['agent'])) $cOption[CURLOPT_USERAGENT] = $option['agent'];
 
         $cOption[CURLOPT_URL] = $url;            //接收页
