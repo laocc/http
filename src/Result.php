@@ -64,9 +64,11 @@ class Result
     /**
      * @return string|null
      */
-    public function error()
+    public function error(array $allowState = [])
     {
-        if (!$this->_error) return null;
+        if (!$this->_error) {
+            return null;
+        }
         return $this->_message;
     }
 
@@ -78,7 +80,7 @@ class Result
     public function setError(string $msg = null, int $error = 100)
     {
         $this->_error = $error;
-        $this->_message = $msg;
+        $this->_message = $msg ?: "ERROR({$error})";
         return $this;
     }
 

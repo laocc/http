@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace esp\http;
 
+use function esp\helper\root;
 use function esp\http\helper\is_ip;
 
 final class Http
@@ -262,8 +263,7 @@ final class Http
     {
         if (is_null($cookies)) {
             if (substr($this->option['cookies'] ?? '', 0, 1) === '/') {
-                $text = file_get_contents($this->option['cookies']);
-                return $text;
+                return file_get_contents($this->option['cookies']);
             } else {
                 return $this->option['cookies'];
             }
@@ -463,11 +463,13 @@ final class Http
 
         $cOption = [];
 
-        if ($option['echo'] ?? 0) {
+        if (isset($option['stderr'])) {
             $cOption[CURLOPT_VERBOSE] = true;//输出所有的信息，写入到STDERR(直接打印到屏幕)
-//        $cOption[CURLOPT_STDERR] = root('/cache/curl');//若不指定，则输出到屏幕
             $cOption[CURLOPT_CERTINFO] = true;//TRUE 将在安全传输时输出 SSL 证书信息到 STDERR。
             $cOption[CURLOPT_FAILONERROR] = true;//当 HTTP 状态码大于等于 400，TRUE 将将显示错误详情。 默认情况下将返回页面，忽略 HTTP 代码。
+            if (is_string($option['stderr'])) {
+                $cOption[CURLOPT_STDERR] = root($option['stderr']);//输出到文件，若不指定，则输出到屏幕
+            }
         }
 
         if (isset($option['host'])) {
@@ -596,14 +598,14 @@ final class Http
         if (!empty($option['headers'])) $cOption[CURLOPT_HTTPHEADER] = $option['headers'];     //头信息
 
         if (isset($option['ua'])) $option['agent'] = $option['ua'];
-        if (!isset($option['agent'])) $option['agent'] = 'HttpClient/cURL laocc/esp laocc/http';
+        if (!isset($option['agent'])) $option['agent'] = 'HttpClient/cURL laoCC/esp laoCC/http';
         if (!empty($option['agent'])) $cOption[CURLOPT_USERAGENT] = $option['agent'];
 
         $cOption[CURLOPT_URL] = $url;            //接收页
         $cOption[CURLOPT_HEADER] = (isset($option['header']) and $option['header']);        //带回头信息
         $cOption[CURLOPT_DNS_CACHE_TIMEOUT] = 120;                    //内存中保存DNS信息，默认120秒
         $cOption[CURLOPT_CONNECTTIMEOUT] = $option['wait'] ?? 10;     //在发起连接前等待的时间，如果设置为0，则无限等待
-        $cOption[CURLOPT_TIMEOUT] = ($option['timeout'] ?? 10);       //允许执行的最长秒数，若用毫秒级，用CURLOPT_TIMEOUT_MS
+        $cOption[CURLOPT_TIMEOUT] = ($option['timeout'] ?? 10);       //允许执行的最长秒数，若用毫秒级，用TIMEOUT_MS
         $cOption[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;              //指定使用IPv4解析
         $cOption[CURLOPT_RETURNTRANSFER] = true;                      //返回文本流，若不指定则是直接打印
         $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
@@ -619,7 +621,6 @@ final class Http
              */
             if ($option['ssl'] > 0) {
                 if ($option['ssl'] > 2) $option['ssl'] = 2;
-//                $cOption[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
                 $cOption[CURLOPT_SSL_VERIFYPEER] = true;
                 $cOption[CURLOPT_SSL_VERIFYHOST] = intval($option['ssl']);
             } else {
@@ -667,13 +668,13 @@ final class Http
             $html = trim(substr($html, $info['header_size']));
         }
 
-        if ($info['content_type'] && preg_match('/charset=([gbk2312]{3,6})/i', $info['content_type'], $chat)) {
+        if ($info['content_type'] && preg_match('/charset=([gbk231]{3,6})/i', $info['content_type'], $chat)) {
             $html = mb_convert_encoding($html, 'UTF-8', $chat[1]);
 
         } else if (isset($option['charset'])) {
             if ($option['charset'] === 'auto') {
                 //自动识别gbk/gb2312转换为utf-8
-                if (preg_match('/<meta.+?charset=[\'\"]?([gbk2312]{3,6})[\'\"]?/i', $html, $chat)) {
+                if (preg_match('/<meta.+?charset=[\'\"]?([gbk231]{3,6})[\'\"]?/i', $html, $chat)) {
                     $option['charset'] = $chat[1];
                 } else {
                     $option['charset'] = null;
@@ -686,9 +687,8 @@ final class Http
             }
         }
 
-
-        if (intval($info['http_code']) !== 200) {
-            $error = intval($info['http_code']);
+        $error = intval($info['http_code']);
+        if (!in_array($error, array_merge($option['allow'] ?? [], [200]))) {
             if ($error === 0) $error = 10;
             $result->setError($html, $error);
         }
