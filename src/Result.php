@@ -7,20 +7,23 @@ use function esp\http\helper\text;
 
 class Result
 {
-    private $_error = 0;
-    private $_message = '';
+    /**
+     * curl的错误，请求结果的code不等于200
+     * 若请求结果有可能不是200也算正常情况，请在请求时加 $option['allow']=[203,205]
+     */
+    public $_error = 0;
+    public $_message = '';
 
-    private $_encode = '';
-    private $_header = [];
+    public $_encode = '';
+    public $_header = [];
 
-    private $_option = [];
-    private $_info = [];
-    private $_time = 0;
-    private $_url;
-    private $_post;
+    public $_option = [];
+    public $_info = [];
+    public $_time = 0;
+    public $_url;
 
-    private $_html;
-    private $_data;
+    public $_html;
+    public $_data;
 
 
     /**
@@ -62,11 +65,23 @@ class Result
     }
 
     /**
+     * 检查数据结果是否有异常
+     * @param bool $chkErrSuccess 是否检查data中error/success
+     * @param array $allowState data.error排除的情况
      * @return string|null
+     *
+     * 此方法只能应对请求结果中含有success和error的情况，其他结构时，请自行读取->data()再判断
+     *
      */
-    public function error(array $allowState = [])
+    public function error(bool $chkErrSuccess = true, array $allowState = [])
     {
         if (!$this->_error) {
+            if ($chkErrSuccess) {
+                if ($this->_data['error'] ?? 0 && !in_array($this->_data['error'], $allowState)) {
+                    return $this->_message;
+                }
+                if (!($this->_data['success'] ?? 1)) return $this->_message;
+            }
             return null;
         }
         return $this->_message;
