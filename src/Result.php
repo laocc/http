@@ -22,8 +22,8 @@ class Result
     public $_time = 0;
     public $_url;
 
-    public $_html;
-    public $_data;
+    public $_html = '';
+    public $_data = [];
 
 
     /**
@@ -153,6 +153,7 @@ class Result
      */
     public function text()
     {
+        if (!$this->_html) return '';
         return text($this->_html);
     }
 
