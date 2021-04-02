@@ -20,6 +20,7 @@ class Result
     public $_option = [];
     public $_info = [];
     public $_time = 0;
+    public $_code = 0;
     public $_url;
 
     public $_html = '';
@@ -29,7 +30,7 @@ class Result
     /**
      * @return array
      */
-    public function __debugInfo()
+    public function __debugInfo(): array
     {
         return $this->info();
     }
@@ -54,6 +55,7 @@ class Result
             'message' => $this->_message,
             'time' => $this->_time,
             'encode' => $this->_encode,
+            'code' => $this->_code,
             'option' => $this->_option,
             'info' => $this->_info,
             'header' => $this->_header,
@@ -92,10 +94,16 @@ class Result
      * @param int $error
      * @return $this
      */
-    public function setError(string $msg = null, int $error = 100)
+    public function setError(string $msg = null, int $error = 100): Result
     {
         $this->_error = $error;
         $this->_message = $msg ?: "ERROR({$error})";
+        return $this;
+    }
+
+    public function setCode(int $code): Result
+    {
+        $this->_code = $code;
         return $this;
     }
 
@@ -103,7 +111,7 @@ class Result
      * @param array $value
      * @return $this
      */
-    public function params(array $value)
+    public function params(array $value): Result
     {
         foreach ($value as $key => $val) {
             $this->{"_{$key}"} = $val;
@@ -143,7 +151,7 @@ class Result
     /**
      * @return string
      */
-    public function html()
+    public function html(): string
     {
         return $this->_html;
     }
@@ -151,7 +159,7 @@ class Result
     /**
      * @return string
      */
-    public function text()
+    public function text(): string
     {
         if (!$this->_html) return '';
         return text($this->_html);
@@ -161,7 +169,7 @@ class Result
      * @param string $html
      * @return $this
      */
-    public function decode(string $html)
+    public function decode(string $html): Result
     {
         $this->_html = $html;
         if (empty($html)) return $this;

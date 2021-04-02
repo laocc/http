@@ -687,10 +687,13 @@ final class Http
             }
         }
 
-        $error = intval($info['http_code']);
-        if (!in_array($error, array_merge($option['allow'] ?? [], [200]))) {
-            if ($error === 0) $error = 10;
-            $result->setError($html, $error);
+        $result->setCode($code = intval($info['http_code']));
+        if (!in_array($code, array_merge($option['allow'] ?? [], [200]))) {
+            if ($code === 0) {
+                $code = 10;
+                $result->setCode($code);
+            }
+            $result->setError($html, $code);
         }
 
         return $result->decode($html);
