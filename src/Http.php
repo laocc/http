@@ -68,13 +68,16 @@ final class Http
     }
 
     /**
-     * post数据，若要传json，请先编码
+     * 发送的数据
+     *
+     * 若传入的是数组，在发送时会被http_build_query($this->data)编码
+     *
+     * 若需要发送json或xml等格式，请事先编码好再传入
      * @param $data
      * @return $this
      */
     public function data($data): Http
     {
-        if (is_array($data)) $data = http_build_query($data);
         $this->data = $data;
         return $this;
     }
@@ -556,7 +559,14 @@ final class Http
                 break;
 
             case "POST":
-                if (is_array($this->data)) $this->data = json_encode($this->data, 256 | 64);
+                if (is_array($this->data)) {
+                    if ($option['encode'] === 'json') {
+                        $this->data = json_encode($this->data, 256 | 64);
+                    } else {
+                        $this->data = http_build_query($this->data);
+                    }
+                }
+
 //                $option['headers'][] = "X-HTTP-Method-Override: POST";
                 $option['headers'][] = "Expect: ";  //post大于1024时，会带100 ContinueHTTP标头的请求，加此指令禁止
                 $cOption[CURLOPT_POST] = true;      //类型为：application/x-www-form-urlencoded
