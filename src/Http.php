@@ -406,7 +406,7 @@ final class Http
                 $this->url = $url;
             }
         }
-        $this->option['type'] = 'post';
+        if (!$this->option['type']) $this->option['type'] = 'post';
         return $this->request();
     }
 
@@ -559,7 +559,7 @@ final class Http
                 break;
 
             case "POST":
-                if (is_array($this->data)) {
+                if (is_array($this->data) and $this->option['type'] !== 'upload') {
                     if ($option['encode'] === 'json') {
                         $this->data = json_encode($this->data, 256 | 64);
                     } else {
