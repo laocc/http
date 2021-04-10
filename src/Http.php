@@ -561,7 +561,7 @@ final class Http
             case "UPLOAD":
             case "POST":
                 if (is_array($this->data) and $option['type'] === 'POST') {
-                    if ($option['encode'] === 'json') {
+                    if (($option['encode'] ?? '') === 'json') {
                         $this->data = json_encode($this->data, 256 | 64);
                     } else {
                         $this->data = http_build_query($this->data);
