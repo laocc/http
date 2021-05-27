@@ -290,6 +290,17 @@ final class Http
     }
 
     /**
+     * 请求方法
+     * @param string $method
+     * @return $this
+     */
+    public function method(string $method): Http
+    {
+        $this->option['type'] = $method;
+        return $this;
+    }
+
+    /**
      * 模仿真人
      * @return $this
      */
@@ -406,7 +417,7 @@ final class Http
                 $this->url = $url;
             }
         }
-        if (!$this->option['type']) $this->option['type'] = 'post';
+        $this->option['type'] = 'post';
         return $this->request();
     }
 
