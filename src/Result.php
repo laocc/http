@@ -171,7 +171,7 @@ class Result
      */
     public function decode(string $html): Result
     {
-        $this->_html = $html;
+        $this->_html = trim($html);
         if (empty($html)) return $this;
 
         if (in_array($this->_encode, ['html', 'txt', 'text'])) {
