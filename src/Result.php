@@ -181,6 +181,18 @@ class Result
 
         switch ($this->_encode) {
 
+            case 'jsobject':
+                $str = preg_replace(["/([a-zA-Z_]+[a-zA-Z0-9_]*)\s*:/", "/:\s*'(.*?)'/"],
+                    ['"\1":', ': "\1"'], $this->_html);
+
+                $this->_data = json_decode($str, true);
+                if (empty($this->_data)) {
+                    $this->_message = '请求结果jsObject无法转换为数组';
+                    $this->_error = 500;
+                }
+
+                break;
+
             case 'json':
 
                 if ($this->_html[0] === '{' or $this->_html[0] === '[') {
