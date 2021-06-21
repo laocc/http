@@ -471,6 +471,9 @@ final class Http
         if (empty($url)) {
             return $result->setError('目标API为空');
         }
+        if (strtolower(substr($url, 0, 4)) !== 'http') {
+            return $result->setError('目标API须以Http开头');
+        }
 
         if (!isset($option['headers'])) $option['headers'] = array();
         if (!is_array($option['headers'])) $option['headers'] = [$option['headers']];
