@@ -103,7 +103,7 @@ final class Http
      */
     public function decode(string $encode = '')
     {
-        if (!in_array($encode, ['json', 'xml', 'html', 'text', 'txt', 'auto'])) $encode = '';
+        if (!in_array($encode, ['json', 'jsobject', 'xml', 'html', 'text', 'txt', 'auto'])) $encode = '';
         $this->option['decode'] = $encode;
         return $this;
     }
