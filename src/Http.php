@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace esp\http;
 
+use esp\library\ext\Xml;
 use function esp\helper\root;
 use function esp\http\helper\is_ip;
 
@@ -51,6 +52,7 @@ final class Http
         $this->option['host'] = [implode(':', $host)];
         $this->option['timeout'] = 3;
         $this->option['encode'] = 'json';
+        $this->option['decode'] = 'json';
         $this->option['ua'] = 'RPC/0.1';
         return $this;
     }
@@ -83,14 +85,26 @@ final class Http
     }
 
     /**
-     * 设置解析目标数据的方法
+     * 发送数据的编码方法
      * @param string $encode
      * @return $this
      */
     public function encode(string $encode = '')
     {
-        if (!in_array($encode, ['json', 'xml', 'html', 'text', 'txt', 'auto'])) $encode = '';
+        if (!in_array($encode, ['json', 'xml', 'url'])) $encode = '';
         $this->option['encode'] = $encode;
+        return $this;
+    }
+
+    /**
+     * 设置解析目标数据的方法
+     * @param string $encode
+     * @return $this
+     */
+    public function decode(string $encode = '')
+    {
+        if (!in_array($encode, ['json', 'xml', 'html', 'text', 'txt', 'auto'])) $encode = '';
+        $this->option['decode'] = $encode;
         return $this;
     }
 
@@ -223,11 +237,16 @@ final class Http
     /**
      * 指定header，可多次
      * @param string $header
+     * @param string $value
      * @return $this
      */
-    public function headers(string $header): Http
+    public function headers(string $header, string $value = null): Http
     {
-        $this->option['headers'][] = $header;
+        if (is_null($value)) {
+            $this->option['headers'][] = $header;
+        } else {
+            $this->option['headers'][$header] = $value;
+        }
         return $this;
     }
 
@@ -447,16 +466,17 @@ final class Http
      * $option['type']      请求方式，get,post,upload
      * $option['port']      对方端口
      * $option['gzip']      被读取的页面有gzip压缩
-     * $option['headers']   带出的头信息
+     * $option['headers']   携带的头信息
      * $option['header']    返回文本流全部信息，在返回的header里
      * $option['agent']     模拟的客户端UA信息
      * $option['proxy']     代理服务器IP
      * $option['cookies']   带出的Cookies信息，或cookies文件
      * $option['referer']   指定来路URL
      * $option['cert']      带证书
-     * $option['charset']   目标URL编码，转换为utf-8
+     * $option['charset']   目标数据转换格式，默认utf-8
      * $option['redirect']  是否跟着跳转，>0时为跟着跳
-     * $option['encode']    将目标html转换为数组，在返回的array里，可选：json,xml
+     * $option['encode']    发送post若数据是数组，将进行转换，可选：json,xml,query
+     * $option['decode']    将目标html转换为数组，在返回的array里，可选：json,xml
      * $option['host']      目标域名解析成此IP
      * $option['ip']        客户端IP，相当于此cURL变成一个代理服务器
      * $option['lang']      语言，cn或en
@@ -480,6 +500,9 @@ final class Http
 
         $cOption = [];
 
+        /**
+         * 试验性，生产环境勿用
+         */
         if (isset($option['stderr'])) {
             $cOption[CURLOPT_VERBOSE] = true;//输出所有的信息，写入到STDERR(直接打印到屏幕)
             $cOption[CURLOPT_CERTINFO] = true;//TRUE 将在安全传输时输出 SSL 证书信息到 STDERR。
@@ -491,16 +514,21 @@ final class Http
 
         if (isset($option['host'])) {
             if (is_array($option['host'])) {
+                /**
+                 * host必须是array("example.com:80:127.0.0.1")格式
+                 * 不再检查格式有效性
+                 */
                 $cOption[CURLOPT_RESOLVE] = $option['host'];
             } else {
                 if (!is_ip($option['host'])) return $result->setError('Host必须是IP格式');
-
                 $urlDom = explode('/', $url);
-                if (strpos($urlDom[2], ':')) {//将端口移到port中
+                //从url中提取端口
+                if (!isset($option['port']) and strpos($urlDom[2], ':')) {
                     $dom = explode(':', $urlDom[2]);
                     $urlDom[2] = $dom[0];
                     $option['port'] = intval($dom[1]);
-                } else if (!isset($option['port'])) {
+                }
+                if (!isset($option['port'])) {
                     if (strtolower(substr($url, 0, 5)) === 'https') {
                         $option['port'] = 443;
                     } else {
@@ -528,25 +556,21 @@ final class Http
             }
         }
 
+        /**
+         * 允许重定向次数，最少2，最大10
+         */
         if (isset($option['redirect'])) {
-            $cOption[CURLOPT_MAXREDIRS] = max($option['redirect'], 2);//指定最多的 HTTP 重定向次数，最小要为2
-            $cOption[CURLOPT_POSTREDIR] = 1;//什么情况下需要再次 HTTP POST 到重定向网址:1 (301 永久重定向), 2 (302 Found) 和 4 (303 See Other)
+            $cOption[CURLOPT_POSTREDIR] = 7;//位掩码 到重定向网址:1 (301 永久重定向), 2 (302 Found) 和 4 (303 See Other)
             $cOption[CURLOPT_FOLLOWLOCATION] = true;//根据服务器返回 HTTP 头中的 "Location: " 重定向
+            $cOption[CURLOPT_MAXREDIRS] = max($option['redirect'], 2);//指定最多的 HTTP 重定向次数，最小要为2
             $cOption[CURLOPT_AUTOREFERER] = true;//根据 Location: 重定向时，自动设置 header 中的Referer:信息
             $cOption[CURLOPT_UNRESTRICTED_AUTH] = true;//重定向时，继续发送用户名和密码信息，哪怕主机名已改变
+            if ($cOption[CURLOPT_MAXREDIRS] > 10) $cOption[CURLOPT_MAXREDIRS] = 10;
         }
-
 
         if (isset($option['ip'])) {     //指定客户端IP
             $option['headers'][] = "CLIENT-IP: {$option['ip']}";
             $option['headers'][] = "X-FORWARDED-FOR: {$option['ip']}";
-        }
-
-        foreach ($option['headers'] as $k => $h) {
-            if (is_string($k)) {
-                $option['headers'][] = "{$k}: {$h}";
-                unset($option['headers'][$k]);
-            }
         }
 
         if (isset($option['cookies']) and !empty($option['cookies'])) {//带Cookies
@@ -575,10 +599,16 @@ final class Http
             case "UPLOAD":
             case "POST":
                 if (is_array($this->data) and $option['type'] === 'POST') {
-                    if (($option['encode'] ?? '') === 'json') {
+                    $encode = ($option['encode'] ?? '');
+                    if ($encode === 'json') {
                         $this->data = json_encode($this->data, 256 | 64);
+                        $option['headers']['Content-type'] = "application/json";
+                    } else if ($encode === 'xml') {
+                        $this->data = $this->xml($this->data);
+                        $option['headers']['Content-type'] = "application/xml";
                     } else {
                         $this->data = http_build_query($this->data);
+                        $option['headers']['Content-type'] = "application/x-www-form-urlencoded";
                     }
                 }
 
@@ -616,11 +646,13 @@ final class Http
         }
 
         if (isset($option['gzip']) and $option['gzip']) {   //有压缩
-            $option['headers'][] = "Accept-Encoding: gzip, deflate";
+            $option['headers']['Accept-Encoding'] = "gzip, deflate";
             $cOption[CURLOPT_ENCODING] = "gzip, deflate";
         }
 
-        if (!empty($option['headers'])) $cOption[CURLOPT_HTTPHEADER] = $option['headers'];     //头信息
+        if (!empty($option['headers'])) {
+            $cOption[CURLOPT_HTTPHEADER] = $this->realHeaders($option['headers']);
+        }
 
         if (isset($option['ua'])) $option['agent'] = $option['ua'];
         if (!isset($option['agent'])) $option['agent'] = 'HttpClient/cURL laoCC/esp laoCC/http';
@@ -676,7 +708,7 @@ final class Http
         $result->params([
             'url' => $url,
             'info' => $info,
-            'encode' => $option['encode'] ?? '',
+            'decode' => $option['decode'] ?? ($option['encode'] ?? ''),
             'time' => microtime(true) - $time,
             'post' => $this->data,
             'option' => $cOption,
@@ -722,6 +754,34 @@ final class Http
         }
 
         return $result->decode($html);
+    }
+
+    private function realHeaders(array $heads)
+    {
+        $array = [];
+        foreach ($heads as $h => $head) {
+            if (is_string($h)) {
+                $array[$this->Camelize($h)] = trim($head);
+            } else {
+                $str = explode(':', $head, 2);
+                $array[$this->Camelize($str[0])] = trim($str[1]);
+            }
+        }
+        $heads = [];
+        foreach ($array as $k => $str) $heads[] = "{$k}: " . trim($str, ';');
+        return $heads;
+    }
+
+    private function Camelize(string $str)
+    {
+        return implode('-', array_map(function ($s) {
+            return ucfirst($s);
+        }, explode('-', str_replace('_', '-', strtolower($str)))));
+    }
+
+    private function xml(array $xml, $notes = null)
+    {
+        return (new Xml($xml, $notes ?: 'xml'))->render(false);
     }
 
 }

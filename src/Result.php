@@ -14,7 +14,7 @@ class Result
     public $_error = 0;
     public $_message = '';
 
-    public $_encode = '';
+    public $_decode = '';
     public $_header = [];
 
     public $_option = [];
@@ -54,7 +54,7 @@ class Result
             'error' => $this->_error,
             'message' => $this->_message,
             'time' => $this->_time,
-            'encode' => $this->_encode,
+            'decode' => $this->_decode,
             'code' => $this->_code,
             'option' => $this->_option,
             'info' => $this->_info,
@@ -174,12 +174,12 @@ class Result
         $this->_html = trim($html);
         if (empty($html)) return $this;
 
-        if (in_array($this->_encode, ['html', 'txt', 'text'])) {
+        if (in_array($this->_decode, ['html', 'txt', 'text'])) {
             if (empty($this->_message)) $this->_message = 'ok';
             return $this;
         }
 
-        switch ($this->_encode) {
+        switch ($this->_decode) {
 
             case 'jsobject':
                 $str = preg_replace(["/([a-zA-Z_]+[a-zA-Z0-9_]*)\s*:/", "/:\s*'(.*?)'/"],
