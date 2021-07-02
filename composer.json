@@ -16,9 +16,6 @@
     "ext-json": "*"
   },
   "autoload": {
-    "files": [
-      "helper/function.php"
-    ],
     "psr-4": {
       "esp\\http\\": "src/"
     }
