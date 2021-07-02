@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace esp\http;
 
-use function esp\http\helper\text;
+use function esp\helper\text;
 
 class Result
 {

@@ -5,7 +5,7 @@ namespace esp\http;
 
 use esp\library\ext\Xml;
 use function esp\helper\root;
-use function esp\http\helper\is_ip;
+use function esp\helper\is_ip;
 
 final class Http
 {
