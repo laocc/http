@@ -5,7 +5,7 @@ namespace esp\http;
 
 use function esp\helper\text;
 
-class Result
+class HttpResult
 {
     /**
      * curl的错误，请求结果的code不等于200

@@ -407,7 +407,7 @@ final class Http
     /**
      * get方式读取
      * @param string $url
-     * @return Result
+     * @return HttpResult
      */
     public function get(string $url = '')
     {
@@ -425,7 +425,7 @@ final class Http
     /**
      * post方式
      * @param string $url
-     * @return Result
+     * @return HttpResult
      */
     public function post(string $url = '')
     {
@@ -443,7 +443,7 @@ final class Http
     /**
      * 上传文件，需要同时用files/field附加文件和指定表单文件名
      * @param string $url
-     * @return Result
+     * @return HttpResult
      */
     public function upload(string $url = '')
     {
@@ -461,7 +461,7 @@ final class Http
 
     /**
      * @param string|null $url
-     * @return Result
+     * @return HttpResult
      *
      * $option['type']      请求方式，get,post,upload
      * $option['port']      对方端口
@@ -484,7 +484,7 @@ final class Http
      */
     public function request(string $url = null)
     {
-        $result = new Result();
+        $result = new HttpResult();
         $option = $this->option;
         if (is_null($url)) $url = $this->url;
 
