@@ -94,14 +94,14 @@ class HttpResult
      * @param int $error
      * @return $this
      */
-    public function setError(string $msg = null, int $error = 100): Result
+    public function setError(string $msg = null, int $error = 100): HttpResult
     {
         $this->_error = $error;
         $this->_message = $msg ?: "ERROR({$error})";
         return $this;
     }
 
-    public function setCode(int $code): Result
+    public function setCode(int $code): HttpResult
     {
         $this->_code = $code;
         return $this;
@@ -111,7 +111,7 @@ class HttpResult
      * @param array $value
      * @return $this
      */
-    public function params(array $value): Result
+    public function params(array $value): HttpResult
     {
         foreach ($value as $key => $val) {
             $this->{"_{$key}"} = $val;
@@ -169,7 +169,7 @@ class HttpResult
      * @param string $html
      * @return $this
      */
-    public function decode(string $html): Result
+    public function decode(string $html): HttpResult
     {
         $this->_html = trim($html);
         if (empty($html)) return $this;
