@@ -562,10 +562,11 @@ final class Http
         if (isset($option['redirect'])) {
             $cOption[CURLOPT_POSTREDIR] = 7;//位掩码 到重定向网址:1 (301 永久重定向), 2 (302 Found) 和 4 (303 See Other)
             $cOption[CURLOPT_FOLLOWLOCATION] = true;//根据服务器返回 HTTP 头中的 "Location: " 重定向
-            $cOption[CURLOPT_MAXREDIRS] = max($option['redirect'], 2);//指定最多的 HTTP 重定向次数，最小要为2
+            $cOption[CURLOPT_MAXREDIRS] = $option['redirect'];//指定最多的 HTTP 重定向次数，最小要为2
             $cOption[CURLOPT_AUTOREFERER] = true;//根据 Location: 重定向时，自动设置 header 中的Referer:信息
             $cOption[CURLOPT_UNRESTRICTED_AUTH] = true;//重定向时，继续发送用户名和密码信息，哪怕主机名已改变
-            if ($cOption[CURLOPT_MAXREDIRS] > 10) $cOption[CURLOPT_MAXREDIRS] = 10;
+            if ($cOption[CURLOPT_MAXREDIRS] < 2) $cOption[CURLOPT_MAXREDIRS] = 2;
+            elseif ($cOption[CURLOPT_MAXREDIRS] > 10) $cOption[CURLOPT_MAXREDIRS] = 10;
         }
 
         if (isset($option['ip'])) {     //指定客户端IP
@@ -745,7 +746,7 @@ final class Http
         }
 
         $result->setCode($code = intval($info['http_code']));
-        if (!in_array($code, array_merge($option['allow'] ?? [], [200]))) {
+        if (!in_array($code, array_merge($option['allow'] ?? [], [200, 204]))) {
             if ($code === 0) {
                 $code = 10;
                 $result->setCode($code);
