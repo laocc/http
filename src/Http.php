@@ -603,13 +603,19 @@ final class Http
                     $encode = ($option['encode'] ?? '');
                     if ($encode === 'json') {
                         $this->data = json_encode($this->data, 256 | 64);
-                        $option['headers']['Content-type'] = "application/json";
+                        if (!isset($option['headers']['Content-type'])) {
+                            $option['headers']['Content-type'] = "application/json;charset=UTF-8";
+                        }
                     } else if ($encode === 'xml') {
                         $this->data = $this->xml($this->data);
-                        $option['headers']['Content-type'] = "application/xml";
+                        if (!isset($option['headers']['Content-type'])) {
+                            $option['headers']['Content-type'] = "application/xml;charset=UTF-8";
+                        }
                     } else {
                         $this->data = http_build_query($this->data);
-                        $option['headers']['Content-type'] = "application/x-www-form-urlencoded";
+                        if (!isset($option['headers']['Content-type'])) {
+                            $option['headers']['Content-type'] = "application/x-www-form-urlencoded;charset=UTF-8";
+                        }
                     }
                 }
 
@@ -627,9 +633,7 @@ final class Http
                 break;
         }
 
-        if (isset($option['auth'])) {
-            $cOption[CURLOPT_USERPWD] = $option['auth'];
-        }
+        if (isset($option['auth'])) $cOption[CURLOPT_USERPWD] = $option['auth'];
 
         //指定代理
         if (isset($option['proxy'])) {
