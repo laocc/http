@@ -224,6 +224,16 @@ final class Http
     }
 
     /**
+     * @param bool $scd
+     * @return $this
+     */
+    public function transfer(bool $scd = true): Http
+    {
+        $this->option['transfer'] = $scd;
+        return $this;
+    }
+
+    /**
      * 请求等待时间（运行阶段）
      * @param int $scd
      * @return $this
@@ -669,7 +679,7 @@ final class Http
         $cOption[CURLOPT_CONNECTTIMEOUT] = $option['wait'] ?? 10;     //在发起连接前等待的时间，如果设置为0，则无限等待
         $cOption[CURLOPT_TIMEOUT] = ($option['timeout'] ?? 10);       //允许执行的最长秒数，若用毫秒级，用TIMEOUT_MS
         $cOption[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;              //指定使用IPv4解析
-        $cOption[CURLOPT_RETURNTRANSFER] = true;                      //返回文本流，若不指定则是直接打印
+        $cOption[CURLOPT_RETURNTRANSFER] = ($option['transfer'] ?? true);//返回文本流，若不指定则是直接打印
         $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
 
         if (strtoupper(substr($url, 0, 5)) === "HTTPS") {
@@ -700,6 +710,9 @@ final class Http
         }
 
         $cOption[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_NONE;//自动选择http版本
+
+        //若有指定参数，优选用指定的参数
+        if (isset($option['params']) and is_array($option['params'])) $cOption = $option['params'] + $cOption;
 
         $cURL = curl_init();   //初始化一个cURL会话，若出错，则退出。
         if ($cURL === false) {
