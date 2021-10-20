@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace esp\http;
 
-use esp\library\ext\Xml;
+use esp\helper\library\ext\Xml;
 use function esp\helper\root;
 use function esp\helper\is_ip;
 
