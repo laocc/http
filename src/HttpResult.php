@@ -63,6 +63,10 @@ class HttpResult
         ];
         if ($key) return $val[$key];
 
+        //非文本结果，不在info中带回html，否则保存的日志会有乱码，或文件很大
+        $tp = $this->_info['content_type'] ?? '';
+        if ($tp and !preg_match('/(text|xml|json|javascript|html)/i', $tp)) unset($val['html']);
+
         return $val;
     }
 
