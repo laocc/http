@@ -26,6 +26,8 @@ class HttpResult
     public $_html = '';
     public $_data = [];
 
+    private $limitPrintSize = 1024;
+
 
     /**
      * @return array
@@ -63,9 +65,13 @@ class HttpResult
         ];
         if ($key) return $val[$key];
 
-        //非文本结果，不在info中带回html，否则保存的日志会有乱码，或文件很大
-        $tp = $this->_info['content_type'] ?? '';
-        if ($tp and !preg_match('/(text|xml|json|javascript|html)/i', $tp)) unset($val['html']);
+        $size = intval($this->_info['size_download'] ?? 0);
+        $type = $this->_info['content_type'] ?? '';
+        if ($size > $this->limitPrintSize) {
+            $val['html'] = "下载内容超过1Kb(格式{$type})，请通过RESULT->html()方式查询结果";
+        } else if (!preg_match('/(text|xml|json|javascript|html)/i', $type)) {
+            $val['html'] = "下载内容非文本格式：{$type}，请通过RESULT->html()方式查询结果";
+        }
 
         return $val;
     }
