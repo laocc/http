@@ -224,6 +224,7 @@ class HttpResult
             case 'text':
             case 'txt':
                 //这几种情况，不尝试转换数组
+                $this->_data = $this->_html;
                 break;
             default:
 
