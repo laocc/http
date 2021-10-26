@@ -9,14 +9,19 @@ use function esp\helper\is_ip;
 
 final class Http
 {
-    private $option;
+    private $option = [];
     private $url;
     private $data;
     private $value;
 
-    public function __construct(array $option = [])
+    public function __construct($param = null, array $option = [])
     {
-        $this->option = $option;
+        if (is_array($param)) {
+            $this->option = $param;
+        } else if (is_string($param)) {
+            $this->url = trim($param, '/');
+            $this->option = $option;
+        }
     }
 
 
@@ -65,7 +70,7 @@ final class Http
      */
     public function url(string $url): Http
     {
-        $this->url = $url;
+        $this->url = trim($url, '/');
         return $this;
     }
 
@@ -413,6 +418,18 @@ final class Http
         return $this;
     }
 
+    private function reUrl(string $url = null)
+    {
+        if (!$url) return $this->url;
+        if ($url[0] === '/') {
+            $this->url = $this->url . $url;
+        } else if (substr($url, 0, 4) === 'http') {
+            $this->url = $url;
+        } else {
+            $this->url = "{$this->url}/{$url}";
+        }
+        return $this->url;
+    }
 
     /**
      * get方式读取
@@ -421,13 +438,7 @@ final class Http
      */
     public function get(string $url = '')
     {
-        if ($url) {
-            if ($url[0] === '/') {
-                $this->url = trim($this->url, '/') . $url;
-            } else {
-                $this->url = $url;
-            }
-        }
+        $this->reUrl($url);
         $this->option['type'] = 'get';
         return $this->request();
     }
@@ -439,13 +450,7 @@ final class Http
      */
     public function post(string $url = '')
     {
-        if ($url) {
-            if ($url[0] === '/') {
-                $this->url = trim($this->url, '/') . $url;
-            } else {
-                $this->url = $url;
-            }
-        }
+        $this->reUrl($url);
         $this->option['type'] = 'post';
         return $this->request();
     }
@@ -457,14 +462,8 @@ final class Http
      */
     public function upload(string $url = '')
     {
+        $this->reUrl($url);
         $this->option['type'] = 'upload';
-        if ($url) {
-            if ($url[0] === '/') {
-                $this->url = trim($this->url, '/') . $url;
-            } else {
-                $this->url = $url;
-            }
-        }
         return $this->request();
     }
 
@@ -496,8 +495,7 @@ final class Http
     {
         $result = new HttpResult();
         $option = $this->option;
-        if (is_null($url)) $url = $this->url;
-
+        $url = $this->reUrl($url);
         if (empty($url)) {
             return $result->setError('目标API为空');
         }

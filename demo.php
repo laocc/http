@@ -1,11 +1,21 @@
 <?php
 
 
-$http = new \esp\http\Http();
+$http = new \esp\http\Http('http://www.demo.com/');
 
-$get = $http->url('http://www.demo.com/api/main')->get('json');
+$http->get('/api/main')
+    ->then(
+        function ($data, $resp) {
+            print_r($data);
+            print_r($resp);
+        })
+    ->then(
+        function ($data, $resp) {
+            print_r($data);
+            print_r($resp);
+        }
+    );
 
-print_r($get);
 
 
 

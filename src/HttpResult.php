@@ -256,5 +256,42 @@ class HttpResult
         return $this;
     }
 
+    private $_thenRun = 0;
+
+    /**
+     * 第一次执行，可以同时2个回调，分别为success和fail
+     * 第二次执行，只执行fail，如果前面有执行过fail，则本次忽略
+     * 第三次以后均不执行
+     * @param callable $success
+     * @param callable|null $fail
+     * @return $this
+     *
+     * success(data,info)
+     * fail(error_code,info)
+     */
+    public function then(callable $success, callable $fail = null)
+    {
+        if ($this->_thenRun > 1) return $this;
+
+        if ($this->_thenRun) {
+            $this->_thenRun++;
+            if ($this->_error) {
+                //已执行过一次then，此时为fail回调
+                if (is_callable($success)) $success($this->_data, $this->info());
+            }
+            return $this;
+        }
+
+        if ($this->_error) {
+            if (is_callable($fail)) {
+                $this->_thenRun++;
+                $fail($this->_error, $this->info());
+            }
+        } else {
+            if (is_callable($success)) $success($this->_data, $this->info());
+        }
+        $this->_thenRun++;
+        return $this;
+    }
 
 }
