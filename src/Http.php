@@ -769,7 +769,7 @@ final class Http
             $result->setError($html, $code);
         }
 
-        return $result->decode($html);
+        return $result->decode($html, $option['may_empty'] ?? false);
     }
 
     private function realHeaders(array $heads)

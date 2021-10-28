@@ -68,7 +68,7 @@ class HttpResult
         $size = intval($this->_info['size_download'] ?? 0);
         $type = $this->_info['content_type'] ?? '';
         if ($size > $this->limitPrintSize) {
-            $val['html'] = "下载内容超过1Kb(格式{$type})，请通过RESULT->html()方式查询结果";
+            $val['html'] = "下载内容超过1Kb，请通过RESULT->html()方式查询结果";
         } else if (!preg_match('/(text|xml|json|javascript|html)/i', $type)) {
             $val['html'] = "下载内容非文本格式：{$type}，请通过RESULT->html()方式查询结果";
         }
@@ -179,15 +179,23 @@ class HttpResult
      * @param string $html
      * @return $this
      */
-    public function decode(string $html): HttpResult
+    public function decode(string $html, bool $mayEmpty = false): HttpResult
     {
         $this->_html = trim($html);
-        if (empty($html)) return $this;
+        if (empty($this->_html)) {
+            if (!$mayEmpty) {//是否有可能为空
+                $this->_message = '请求结果为空';
+                $this->_error = 500;
+            }
+            return $this;
+        }
 
         if (in_array($this->_decode, ['html', 'txt', 'text'])) {
             if (empty($this->_message)) $this->_message = 'ok';
             return $this;
         }
+
+        $fstCode = $this->_html[0] ?? '';
 
         switch ($this->_decode) {
 
@@ -205,7 +213,7 @@ class HttpResult
 
             case 'json':
 
-                if ($this->_html[0] === '{' or $this->_html[0] === '[') {
+                if ($fstCode === '{' or $fstCode === '[') {
                     $this->_data = json_decode($this->_html, true);
                     if (empty($this->_data)) {
                         $this->_message = '请求结果JSON无法转换为数组';
@@ -218,7 +226,7 @@ class HttpResult
 
                 break;
             case 'xml':
-                if ($this->_html[0] === '<') {
+                if ($fstCode === '<') {
                     $this->_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
                     if (empty($this->_data)) {
                         $this->_message = '请求结果XML无法转换为数组';
@@ -238,13 +246,13 @@ class HttpResult
                 break;
             default:
 
-                if ($this->_html[0] === '{' or $this->_html[0] === '[') {
+                if ($fstCode === '{' or $fstCode === '[') {
                     $this->_data = json_decode($this->_html, true);
                     if (empty($this->_data)) {
                         $this->_message = '请求结果JSON无法转换为数组';
                         $this->_error = 500;
                     }
-                } else if ($this->_html[0] === '<' and strpos($this->_html, 'html>') === false) {
+                } else if ($fstCode === '<' and strpos($this->_html, 'html>') === false) {
                     try {
                         $this->_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
                     } catch (\Error $error) {
@@ -272,35 +280,48 @@ class HttpResult
     /**
      * 第一次执行，可以同时2个回调，分别为success和fail
      * 第二次执行，只执行fail，如果前面有执行过fail，则本次忽略
-     * 第三次以后均不执行
+     * 第三次以后执行回调的第一个参数为html
      * @param callable $success
      * @param callable|null $fail
+     * @param callable|null $complete
      * @return $this
      *
      * success(data,info)
      * fail(error_code,info)
+     * complete(html,info)
      */
-    public function then(callable $success, callable $fail = null)
+    public function then(callable $success, callable $fail = null, callable $complete = null): HttpResult
     {
-        if ($this->_thenRun > 1) return $this;
+        $info = $this->info();
 
-        if ($this->_thenRun) {
+        if ($this->_thenRun > 1) {
+            //已执行过2次以上，此时为complete回调
+            $success($this->_html, $info);
             $this->_thenRun++;
-            if ($this->_error) {
-                //已执行过一次then，此时为fail回调
-                if (is_callable($success)) $success($this->_data, $this->info());
-            }
             return $this;
         }
 
+        if ($this->_thenRun === 1) {
+            if ($this->_error) {
+                //已执行过一次，此时为fail回调
+                $success($this->_data, $info);
+            }
+            $this->_thenRun++;
+            return $this;
+        }
+
+        //出错
         if ($this->_error) {
             if (is_callable($fail)) {
-                $this->_thenRun++;
-                $fail($this->_error, $this->info());
+                $fail($this->_error, $info);
             }
         } else {
-            if (is_callable($success)) $success($this->_data, $this->info());
+            //正常结果
+            $success($this->_data, $info);
         }
+
+        if (is_callable($complete)) $complete($this->_html, $info);
+
         $this->_thenRun++;
         return $this;
     }
