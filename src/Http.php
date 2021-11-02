@@ -102,13 +102,14 @@ final class Http
     public function sign(string $token, string $tKey = 'key', string $sKey = 'sign')
     {
         if (!is_array($this->data)) return '调用http->sign()前传入的data须为数组格式';
+        $data = $this->data;
+        ksort($data);
         $str = [];
-        foreach ($this->data as $k => $v) $str[] = "{$k}={$v}";
+        foreach ($data as $k => $v) $str[] = "{$k}={$v}";
         $str = implode('&', $str);
-        $this->data[$sKey] = md5("{$str}{$tKey}={$token}");
+        $this->data[$sKey] = md5("{$str}&{$tKey}={$token}");
         return $this;
     }
-
 
     /**
      * 发送数据的编码方法
