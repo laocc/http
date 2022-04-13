@@ -93,21 +93,27 @@ final class Http
      * 常规加签名
      *
      * 验签 $this->post->signCheck(['token' => 'ddd'])
-     *
      * @param string $token
      * @param string $tKey
      * @param string $sKey
+     * @param string|null $signString
      * @return $this|string
      */
-    public function sign(string $token, string $tKey = 'key', string $sKey = 'sign')
+    public function sign(string $token, string $tKey = 'key', string $sKey = 'sign', string &$signString = null)
     {
         if (!is_array($this->data)) return '调用http->sign()前传入的data须为数组格式';
         $data = $this->data;
         ksort($data);
         $str = [];
-        foreach ($data as $k => $v) $str[] = "{$k}={$v}";
+        foreach ($data as $k => $v) {
+            if (is_array($v)) $v = json_encode($v);
+            if (!is_string($v)) $v = strval($v);
+            if (empty($v)) continue;
+            $str[] = "{$k}={$v}";
+        }
         $str = implode('&', $str);
-        $this->data[$sKey] = md5("{$str}&{$tKey}={$token}");
+        $signString = "{$str}&{$tKey}={$token}";
+        $this->data[$sKey] = md5($signString);
         return $this;
     }
 
