@@ -69,10 +69,10 @@ class HttpResult
         $type = $this->_info['content_type'] ?? '';
         if ($size > $this->limitPrintSize) {
             $val['html'] = "下载内容超过1Kb，请通过RESULT->html()方式查询结果";
-        } else if (!preg_match('/(text|xml|json|javascript|html)/i', $type)) {
-            $val['html'] = "下载内容非文本格式：{$type}，请通过RESULT->html()方式查询结果";
         }
-
+//        if (!preg_match('/(text|xml|json|javascript|html)/i', $type)) {
+//            $val['html'] = "下载内容非文本格式：{$type}，请通过RESULT->html()方式查询结果";
+//        }
         return $val;
     }
 
