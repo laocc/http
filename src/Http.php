@@ -808,7 +808,7 @@ final class Http
                 $array[$this->Camelize($h)] = trim($head);
             } else {
                 $str = explode(':', $head, 2);
-                $array[$this->Camelize($str[0])] = trim($str[1]);
+                if (isset($str[1])) $array[$this->Camelize($str[0])] = trim($str[1]);
             }
         }
         $heads = [];
