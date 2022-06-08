@@ -657,6 +657,7 @@ final class Http
                             $option['headers']['Content-Type'] = "application/xml;charset=UTF-8";
                         }
                     } else {
+                        $this->data = http_build_query($this->data);
                         if (!isset($option['headers']['Content-Type'])) {
                             $option['headers']['Content-Type'] = "application/x-www-form-urlencoded;charset=UTF-8";
                         }
