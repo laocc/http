@@ -106,7 +106,9 @@ final class Http
         ksort($data);
         $str = [];
         foreach ($data as $k => $v) {
-            if (is_array($v)) $v = json_encode($v);
+            if ($v === '' or is_null($v)) continue;
+            if (is_bool($v)) $v = intval($v);
+            else if (is_array($v)) $v = json_encode($v, 320);
             if (!is_string($v)) $v = strval($v);
             if (empty($v)) continue;
             $str[] = "{$k}={$v}";
@@ -278,9 +280,10 @@ final class Http
     }
 
     /**
-     * 指定header，可多次
+     * 指定header，可多次指定
+     *
      * @param string $header
-     * @param string $value
+     * @param string|null $value
      * @return $this
      */
     public function headers(string $header, string $value = null): Http
@@ -295,6 +298,7 @@ final class Http
 
     /**
      * 指定代理服务器
+     *
      * @param string $proxy
      * @return $this
      */
@@ -431,7 +435,8 @@ final class Http
 
 
     /**
-     * 直接设置
+     * 直接设置option的子项
+     *
      * @param $key
      * @param $value
      * @return $this
@@ -446,6 +451,10 @@ final class Http
         return $this;
     }
 
+    /**
+     * @param string|null $url
+     * @return string
+     */
     private function reUrl(string $url = null)
     {
         if (!$url) return $this->url;
@@ -484,7 +493,7 @@ final class Http
     }
 
     /**
-     * 上传文件，需要同时用files/field附加文件和指定表单文件名
+     * 上传文件，所传内容须为数组，且，其中至少要有一个字段 = new \CURLFile($file);
      * @param string $url
      * @return HttpResult
      */
@@ -621,6 +630,7 @@ final class Http
 
         $option['type'] = strtoupper($option['type'] ?? 'get');
         if (!in_array($option['type'], ['GET', 'POST', 'PUT', 'HEAD', 'DELETE', 'UPLOAD'])) $option['type'] = 'GET';
+        $cOption[CURLOPT_CUSTOMREQUEST] = $option['type'];
 
         switch ($option['type']) {
             case "GET" :
@@ -633,24 +643,22 @@ final class Http
                 }
                 break;
 
-            case "UPLOAD":
             case "POST":
-                if (is_array($this->data) and $option['type'] === 'POST') {
+                if (is_array($this->data)) {
                     $encode = ($option['encode'] ?? '');
                     if ($encode === 'json') {
                         $this->data = json_encode($this->data, 256 | 64);
-                        if (!isset($option['headers']['Content-type'])) {
-                            $option['headers']['Content-type'] = "application/json;charset=UTF-8";
+                        if (!isset($option['headers']['Content-Type'])) {
+                            $option['headers']['Content-Type'] = "application/json;charset=UTF-8";
                         }
                     } else if ($encode === 'xml') {
                         $this->data = $this->xml($this->data);
-                        if (!isset($option['headers']['Content-type'])) {
-                            $option['headers']['Content-type'] = "application/xml;charset=UTF-8";
+                        if (!isset($option['headers']['Content-Type'])) {
+                            $option['headers']['Content-Type'] = "application/xml;charset=UTF-8";
                         }
                     } else {
-                        $this->data = http_build_query($this->data);
-                        if (!isset($option['headers']['Content-type'])) {
-                            $option['headers']['Content-type'] = "application/x-www-form-urlencoded;charset=UTF-8";
+                        if (!isset($option['headers']['Content-Type'])) {
+                            $option['headers']['Content-Type'] = "application/x-www-form-urlencoded;charset=UTF-8";
                         }
                     }
                 }
@@ -661,11 +669,32 @@ final class Http
                 $cOption[CURLOPT_POSTFIELDS] = $this->data;
                 break;
 
+            case "UPLOAD":
+                if (!is_array($this->data)) throw new \Error('传送文件时，data须为数组格式');
+                $hasCurl = false;
+                foreach ($this->data as $f => $dt) {
+                    if ($dt instanceof \CURLFile) {
+                        $hasCurl = true;
+                        break;
+                    }
+                }
+                if (!$hasCurl) throw new \Error('传送文件时，data中至少要有一个= new \CURLFile($file)类型的文件');
+                /**
+                 * 传文件时，文件字段要用 new \CURLFile($path) 读取
+                 */
+                if (!isset($option['headers']['Content-Type'])) {
+                    $option['headers']['Content-Type'] = "multipart/form-data;charset=UTF-8";
+                }
+                $option['headers'][] = "Expect: ";  //post大于1024时，会带100 ContinueHTTP标头的请求，加此指令禁止
+                $cOption[CURLOPT_CUSTOMREQUEST] = 'POST';
+                $cOption[CURLOPT_POSTFIELDS] = $this->data;
+
+                break;
+
             case "HEAD" :   //这三种不常用，使用前须确认对方是否接受
             case "PUT" :
             case "DELETE":
                 //不确定服务器支持这个自定义方法则不要使用它。
-                $cOption[CURLOPT_CUSTOMREQUEST] = $option['type'];
                 break;
         }
 
@@ -805,7 +834,7 @@ final class Http
         $array = [];
         foreach ($heads as $h => $head) {
             if (is_string($h)) {
-                $array[$this->Camelize($h)] = trim($head);
+                $array[$this->Camelize($h)] = trim(strval($head));
             } else {
                 $str = explode(':', $head, 2);
                 if (isset($str[1])) $array[$this->Camelize($str[0])] = trim($str[1]);
