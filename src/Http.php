@@ -570,8 +570,8 @@ final class Http
                 //从url中提取端口
                 if (strpos($urlDom[2], ':')) {
                     $dom = explode(':', $urlDom[2]);
+                    $urlDom[2] = $dom[0];
                     if (!isset($option['port'])) {
-                        $urlDom[2] = $dom[0];
                         $option['port'] = intval($dom[1]);
                     } else if ($option['port'] !== intval($dom[1])) {
                         return $result->setError('指定的port与URL中的port不一致');
@@ -585,13 +585,13 @@ final class Http
                         $option['port'] = 80;
                     }
                 }
+                $cOption[CURLOPT_RESOLVE] = ["{$urlDom[2]}:{$option['port']}:{$option['host']}"];
 
                 if (($option['port'] !== 443 && $option['port'] !== 80) && !strpos($urlDom[2], ':')) {
                     $urlDom[2] = "{$urlDom[2]}:{$option['port']}";
-                    $url = implode($urlDom);
+                    $url = implode('/', $urlDom);
                 }
 
-                $cOption[CURLOPT_RESOLVE] = ["{$urlDom[2]}:{$option['port']}:{$option['host']}"];
             }
         }
 
