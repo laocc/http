@@ -596,10 +596,8 @@ final class Http
         }
 
         if (isset($option['human'])) {
-//            $option['headers'][] = "Cache-Control: no-cache";
             $option['headers'][] = "Cache-Control: max-age=0";
             $option['headers'][] = "Connection: keep-alive";
-//            $option['headers'][] = "Accept-Language: zh-CN,zh;q=0.9,en;q=0.8";
             $option['headers'][] = "Upgrade-Insecure-Requests: 1";
             $option['headers'][] = "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.5,image/webp,image/apng,*/*;q=0.8";
         }
