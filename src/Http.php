@@ -568,11 +568,16 @@ final class Http
                 if (!is_ip($option['host'])) return $result->setError('Host必须是IP格式');
                 $urlDom = explode('/', $url);
                 //从url中提取端口
-                if (!isset($option['port']) and strpos($urlDom[2], ':')) {
+                if (strpos($urlDom[2], ':')) {
                     $dom = explode(':', $urlDom[2]);
-                    $urlDom[2] = $dom[0];
-                    $option['port'] = intval($dom[1]);
+                    if (!isset($option['port'])) {
+                        $urlDom[2] = $dom[0];
+                        $option['port'] = intval($dom[1]);
+                    } else if ($option['port'] !== intval($dom[1])) {
+                        return $result->setError('指定的port与URL中的port不一致');
+                    }
                 }
+
                 if (!isset($option['port'])) {
                     if (strtolower(substr($url, 0, 5)) === 'https') {
                         $option['port'] = 443;
@@ -580,6 +585,12 @@ final class Http
                         $option['port'] = 80;
                     }
                 }
+
+                if (($option['port'] !== 443 && $option['port'] !== 80) && !strpos($urlDom[2], ':')) {
+                    $urlDom[2] = "{$urlDom[2]}:{$option['port']}";
+                    $url = implode($urlDom);
+                }
+
                 $cOption[CURLOPT_RESOLVE] = ["{$urlDom[2]}:{$option['port']}:{$option['host']}"];
             }
         }
