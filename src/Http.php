@@ -530,7 +530,7 @@ final class Http
      */
     public function request(string $url = null)
     {
-        $result = new HttpResult();
+        $result = new HttpResult($this->option['result'] ?? []);
         $option = $this->option;
         $url = $this->reUrl($url);
         if (empty($url)) {
