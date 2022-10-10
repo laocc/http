@@ -9,7 +9,7 @@ use function esp\helper\is_ip;
 
 final class Http
 {
-    private $option = [];
+    private array $option = [];
     private $url;
     private $data;
     private $value;
@@ -53,12 +53,12 @@ final class Http
     public function rpc(array $rpc, string $uri = ''): Http
     {
         $host = ['host' => $rpc['host'], 'port' => $rpc['port'], 'ip' => $rpc['ip']];
-        $this->url = sprintf('http://%s:%s/%s', $host['host'], $host['port'], ltrim($uri, '/'));
+        $this->url = sprintf('%s://%s:%s/%s', 'http', $host['host'], $host['port'], ltrim($uri, '/'));
         $this->option['host'] = [implode(':', $host)];
         $this->option['timeout'] = 3;
         $this->option['encode'] = 'json';
         $this->option['decode'] = 'json';
-        $this->option['ua'] = 'RPC/0.1';
+        $this->option['ua'] = 'esp RPC/1.0.0';
         return $this;
     }
 
@@ -124,7 +124,7 @@ final class Http
      * @param string $encode
      * @return $this
      */
-    public function encode(string $encode = '')
+    public function encode(string $encode = ''): Http
     {
         if (!in_array($encode, ['json', 'xml', 'url'])) $encode = '';
         $this->option['encode'] = $encode;
@@ -136,7 +136,7 @@ final class Http
      * @param string $encode
      * @return $this
      */
-    public function decode(string $encode = '')
+    public function decode(string $encode = ''): Http
     {
         if (!in_array($encode, ['json', 'jsobject', 'xml', 'html', 'text', 'txt', 'auto'])) $encode = '';
         $this->option['decode'] = $encode;
@@ -455,7 +455,7 @@ final class Http
      * @param string|null $url
      * @return string
      */
-    private function reUrl(string $url = null)
+    private function reUrl(string $url = null): string
     {
         if (!$url) return $this->url;
         if ($url[0] === '/') {
@@ -473,7 +473,7 @@ final class Http
      * @param string $url
      * @return HttpResult
      */
-    public function get(string $url = '')
+    public function get(string $url = ''): HttpResult
     {
         $this->reUrl($url);
         $this->option['type'] = 'get';
@@ -485,7 +485,7 @@ final class Http
      * @param string $url
      * @return HttpResult
      */
-    public function post(string $url = '')
+    public function post(string $url = ''): HttpResult
     {
         $this->reUrl($url);
         $this->option['type'] = 'post';
@@ -497,7 +497,7 @@ final class Http
      * @param string $url
      * @return HttpResult
      */
-    public function upload(string $url = '')
+    public function upload(string $url = ''): HttpResult
     {
         $this->reUrl($url);
         $this->option['type'] = 'upload';
@@ -528,7 +528,7 @@ final class Http
      * $option['lang']      语言，cn或en
      * $option['ssl']       SSL检查等级，0，1或2，默认2
      */
-    public function request(string $url = null)
+    public function request(string $url = null): HttpResult
     {
         $result = new HttpResult($this->option['result'] ?? []);
         $option = $this->option;
@@ -839,7 +839,7 @@ final class Http
         return $result->decode($html, $option['may_empty'] ?? false);
     }
 
-    private function realHeaders(array $heads)
+    private function realHeaders(array $heads): array
     {
         $array = [];
         foreach ($heads as $h => $head) {
@@ -855,14 +855,14 @@ final class Http
         return $heads;
     }
 
-    private function Camelize(string $str)
+    private function Camelize(string $str): string
     {
         return implode('-', array_map(function ($s) {
             return ucfirst($s);
         }, explode('-', str_replace('_', '-', strtolower($str)))));
     }
 
-    private function xml(array $xml, $notes = null)
+    private function xml(array $xml, $notes = null): string
     {
         return (new Xml($xml, $notes ?: 'xml'))->render(false);
     }
