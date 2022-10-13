@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace esp\http;
 
+use esp\error\Error;
 use esp\helper\library\ext\Xml;
 use function esp\helper\root;
 use function esp\helper\is_ip;
@@ -680,7 +681,7 @@ final class Http
                 break;
 
             case "UPLOAD":
-                if (!is_array($this->data)) throw new \Error('传送文件时，data须为数组格式');
+                if (!is_array($this->data)) throw new Error('传送文件时，data须为数组格式');
                 $hasCurl = false;
                 foreach ($this->data as $f => $dt) {
                     if ($dt instanceof \CURLFile) {
@@ -688,7 +689,7 @@ final class Http
                         break;
                     }
                 }
-                if (!$hasCurl) throw new \Error('传送文件时，data中至少要有一个= new \CURLFile($file)类型的文件');
+                if (!$hasCurl) throw new Error('传送文件时，data中至少要有一个= new \CURLFile($file)类型的文件');
                 /**
                  * 传文件时，文件字段要用 new \CURLFile($path) 读取
                  */

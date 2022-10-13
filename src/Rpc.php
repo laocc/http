@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace esp\http;
 
+use esp\error\Error;
+
 class Rpc
 {
     private $conf;
@@ -16,7 +18,7 @@ class Rpc
             if (defined('_RPC')) {
                 $this->conf = _RPC;
             } else {
-                throw new \Error('未指定rpc也未定义_RPC');
+                throw new Error('未指定rpc也未定义_RPC');
             }
         }
     }
