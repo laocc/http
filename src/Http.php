@@ -11,7 +11,7 @@ use function esp\helper\is_ip;
 final class Http
 {
     private array $option = [];
-    private $url;
+    private string $url;
     private $data;
     private $value;
 
@@ -111,7 +111,6 @@ final class Http
             if (is_bool($v)) $v = intval($v);
             else if (is_array($v)) $v = json_encode($v, 320);
             if (!is_string($v)) $v = strval($v);
-            if (empty($v)) continue;
             $str[] = "{$k}={$v}";
         }
         $str = implode('&', $str);
@@ -497,6 +496,7 @@ final class Http
      * 上传文件，所传内容须为数组，且，其中至少要有一个字段 = new \CURLFile($file);
      * @param string $url
      * @return HttpResult
+     * @throws Error
      */
     public function upload(string $url = ''): HttpResult
     {
@@ -528,6 +528,7 @@ final class Http
      * $option['ip']        客户端IP，相当于此cURL变成一个代理服务器
      * $option['lang']      语言，cn或en
      * $option['ssl']       SSL检查等级，0，1或2，默认2
+     * @throws Error
      */
     public function request(string $url = null): HttpResult
     {
@@ -863,6 +864,9 @@ final class Http
         }, explode('-', str_replace('_', '-', strtolower($str)))));
     }
 
+    /**
+     * @throws Error
+     */
     private function xml(array $xml, $notes = null): string
     {
         return (new Xml($xml, $notes ?: 'xml'))->render(false);
