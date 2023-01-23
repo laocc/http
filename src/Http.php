@@ -12,8 +12,7 @@ final class Http
 {
     private array $option = [];
     private string $url;
-    private $data;
-    private $value;
+    private $data;//要post的数据，可能是数组，或字串
 
     public function __construct($param = null, array $option = [])
     {
@@ -31,7 +30,6 @@ final class Http
         $this->option = [];
         $this->url = '';
         $this->data = null;
-        $this->value = null;
         return $this;
     }
 
@@ -41,7 +39,6 @@ final class Http
             'url' => $this->url,
             'option' => $this->option,
             'data' => $this->data,
-            'value' => $this->value
         ];
     }
 
