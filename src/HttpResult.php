@@ -11,22 +11,24 @@ class HttpResult
      * curl的错误，请求结果的code不等于200
      * 若请求结果有可能不是200也算正常情况，请在请求时加 $option['allow']=[203,205]
      */
-    public $_error = 0;
-    public $_message = '';
+    public int $_error = 0;
+    public string $_message = '';
 
-    public $_decode = '';
-    public $_header = [];
+    public string $_decode = '';
+    public array $_header = [];
 
-    public $_option = [];
-    public $_info = [];
-    public $_time = 0;
-    public $_code = 0;
-    public $_url;
+    public array $_option = [];
+    public array $_info = [];
+    public int $_time = 0;
+    public int $_code = 0;
+    public int $_retry = 0;
+    public string $_url = '';
 
-    public $_html = '';
-    public $_data = [];
+    public string $_html = '';
+    public array $_data = [];
+    private int $_thenRun = 0;
 
-    private $limitPrintSize = 1024;
+    private int $limitPrintSize = 1024;
 
     public function __construct(array $option)
     {
@@ -61,6 +63,7 @@ class HttpResult
             'message' => $this->_message,
             'time' => $this->_time,
             'decode' => $this->_decode,
+            'retry' => $this->_retry,
             'code' => $this->_code,
             'option' => $this->_option,
             'info' => $this->_info,
@@ -112,6 +115,17 @@ class HttpResult
     {
         $this->_error = $error;
         $this->_message = $msg ?: "ERROR({$error})";
+        return $this;
+    }
+
+    /**
+     * 重试次数
+     *
+     * @return $this
+     */
+    public function reTry(): HttpResult
+    {
+        $this->_retry++;
         return $this;
     }
 
@@ -181,6 +195,7 @@ class HttpResult
 
     /**
      * @param string $html
+     * @param bool $mayEmpty
      * @return $this
      */
     public function decode(string $html, bool $mayEmpty = false): HttpResult
@@ -278,8 +293,6 @@ class HttpResult
 
         return $this;
     }
-
-    private $_thenRun = 0;
 
     /**
      * 第一次执行，可以同时2个回调，分别为success和fail

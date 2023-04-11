@@ -306,6 +306,20 @@ final class Http
     }
 
     /**
+     * 如果请求异常，再次重试
+     *
+     * @param int $times 重试次数，0为不重试，最大3次
+     * @param int $wait 重试等待时间，ms，最小10ms，最大1000ms
+     * @return $this
+     */
+    public function retry(int $times = 1, int $wait = 100): Http
+    {
+        $this->option['retry'] = $times;
+        $this->option['retry_wait'] = $wait;
+        return $this;
+    }
+
+    /**
      * 编码转换
      * @param string $charset
      * @return $this
@@ -783,8 +797,9 @@ final class Http
             return $result->setError('cURL初始化错误');
         }
 
-        $time = microtime(true);
         curl_setopt_array($cURL, $cOption);
+        reTry:
+        $time = microtime(true);
         $html = curl_exec($cURL);
         $info = curl_getinfo($cURL);
         $result->params([
@@ -796,6 +811,16 @@ final class Http
             'option' => $cOption,
         ]);
         if (($err = curl_errno($cURL)) > 0) {
+
+            if (isset($option['retry']) and $option['retry'] > 0) {
+                $option['retry'] -= 1;
+                $result->reTry();
+                if ($option['retry_wait'] > 0) {
+                    usleep($option['retry_wait'] * 1000);
+                }
+                goto reTry;
+            }
+
             $result->setError(curl_error($cURL), $err);
             curl_close($cURL);
             return $result;
