@@ -11,7 +11,9 @@ use function esp\helper\is_ip;
 final class Http
 {
     private array $option = [];
+    private array $files = [];
     private string $url;
+    private \CURLFile $file;
     private $data;//要post的数据，可能是数组，或字串
 
     public function __construct($param = null, array $option = [])
@@ -141,25 +143,18 @@ final class Http
     }
 
     /**
-     * 上传文件
+     * 上传文件，可多次传入，但不可以传入相同文件
+     *
      * @param string $filename
-     * @param $filePath
+     * @param string $mime_type
+     * @param string $posted_filename
      * @return $this
+     * @throws Error
      */
-    public function files(string $filename, $filePath): Http
+    public function file(string $filename, string $mime_type = '', string $posted_filename = ''): Http
     {
-        $this->option['files'][$filename] = $filePath;
-        return $this;
-    }
-
-    /**
-     * 上传文件时，另外添加字段
-     * @param string $field
-     * @return $this
-     */
-    public function field(string $field): Http
-    {
-        $this->option['field'] = $field;
+        if (!is_readable($filename)) throw new Error("文件({$filename})不可读");
+        $this->files['_up_' . md5($filename)] = new \CURLFile($filename, $mime_type, $posted_filename);
         return $this;
     }
 
@@ -516,7 +511,6 @@ final class Http
         return $this->request();
     }
 
-
     /**
      * @param string|null $url
      * @return HttpResult
@@ -694,17 +688,22 @@ final class Http
 
             case "UPLOAD":
                 if (!is_array($this->data)) throw new Error('传送文件时，data须为数组格式');
-                $hasCurl = false;
-                foreach ($this->data as $f => $dt) {
-                    if ($dt instanceof \CURLFile) {
-                        $hasCurl = true;
-                        break;
+                $hasCurlFile = false;
+                if (!empty($this->files)) {
+                    $this->data += $this->files;
+                    $hasCurlFile = true;
+                }
+                if (!$hasCurlFile) {
+                    foreach ($this->data as $f => $dt) {
+                        if ($dt instanceof \CURLFile) {
+                            $hasCurlFile = true;
+                            break;
+                        }
                     }
                 }
-                if (!$hasCurl) throw new Error('传送文件时，data中至少要有一个= new \CURLFile($file)类型的文件');
-                /**
-                 * 传文件时，文件字段要用 new \CURLFile($path) 读取
-                 */
+                if (!$hasCurlFile) {
+                    throw new Error('传送文件时，data中至少要有一个= new \CURLFile($file)类型的文件，或用$http->file(...)传入文件');
+                }
                 if (!isset($option['headers']['Content-Type'])) {
                     $option['headers']['Content-Type'] = "multipart/form-data;charset=UTF-8";
                 }
@@ -753,10 +752,10 @@ final class Http
 
         $cOption[CURLOPT_URL] = $url;            //接收页
         $cOption[CURLOPT_HEADER] = (isset($option['header']) and $option['header']);        //带回头信息
-        $cOption[CURLOPT_DNS_CACHE_TIMEOUT] = 120;                    //内存中保存DNS信息，默认120秒
+        $cOption[CURLOPT_DNS_CACHE_TIMEOUT] = ($option['dns'] ?? 120); //内存中保存DNS信息，默认120秒
         $cOption[CURLOPT_CONNECTTIMEOUT] = $option['wait'] ?? 10;     //在发起连接前等待的时间，如果设置为0，则无限等待
         $cOption[CURLOPT_TIMEOUT] = ($option['timeout'] ?? 10);       //允许执行的最长秒数，若用毫秒级，用TIMEOUT_MS
-        $cOption[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;              //指定使用IPv4解析
+        $cOption[CURLOPT_IPRESOLVE] = ($option['ip_type'] ?? CURL_IPRESOLVE_V4); //指定使用IPv4解析
         $cOption[CURLOPT_RETURNTRANSFER] = ($option['transfer'] ?? true);//返回文本流，若不指定则是直接打印
         $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
 
