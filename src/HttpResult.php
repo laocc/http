@@ -19,7 +19,7 @@ class HttpResult
 
     public array $_option = [];
     public array $_info = [];
-    public int $_time = 0;
+    public float $_time = 0;
     public int $_code = 0;
     public int $_retry = 0;
     public string $_url = '';
