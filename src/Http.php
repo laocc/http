@@ -5,6 +5,7 @@ namespace esp\http;
 
 use esp\error\Error;
 use esp\helper\library\ext\Xml;
+use function esp\helper\mk_dir;
 use function esp\helper\root;
 use function esp\helper\is_ip;
 
@@ -157,6 +158,21 @@ final class Http
         $this->files['_up_' . md5($filename)] = new \CURLFile($filename, $mime_type, $posted_filename);
         return $this;
     }
+
+    /**
+     * 结果保存到文件，即下载文件
+     *
+     * @param string $filename
+     * @return $this
+     * @throws Error
+     */
+    public function save(string $filename): Http
+    {
+        $this->option['save'] = $filename;
+        mk_dir($filename);
+        return $this;
+    }
+
 
     /**
      * 指定主机，在已知目标服务器IP时用，会加快速度，
@@ -560,7 +576,7 @@ final class Http
             $cOption[CURLOPT_CERTINFO] = true;//TRUE 将在安全传输时输出 SSL 证书信息到 STDERR。
             $cOption[CURLOPT_FAILONERROR] = true;//当 HTTP 状态码大于等于 400，TRUE 将将显示错误详情。 默认情况下将返回页面，忽略 HTTP 代码。
             if (is_string($option['stderr'])) {
-                $cOption[CURLOPT_STDERR] = root($option['stderr']);//输出到文件，若不指定，则输出到屏幕
+                $cOption[CURLOPT_STDERR] = root($option['stderr']);//错误信息输出到文件，若不指定，则输出到屏幕
             }
         }
 
@@ -759,6 +775,13 @@ final class Http
         $cOption[CURLOPT_RETURNTRANSFER] = ($option['transfer'] ?? true);//返回文本流，若不指定则是直接打印
         $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
 
+        $forSave = false;
+        if (isset($option['save'])) {
+            $cOption[CURLOPT_FILE] = fopen($option['save'], 'w');
+            $cOption[CURLOPT_RETURNTRANSFER] = true;
+            $forSave = true;
+        }
+
         if (strtoupper(substr($url, 0, 5)) === "HTTPS") {
             if (!isset($option['ssl'])) $option['ssl'] = 2;
             /**
@@ -799,7 +822,13 @@ final class Http
         curl_setopt_array($cURL, $cOption);
         reTry:
         $time = microtime(true);
-        $html = curl_exec($cURL);
+        if ($forSave) {
+            $html = 'SAVE#' . $option['save'];
+            $option['decode'] = 'text';
+            curl_exec($cURL);
+        } else {
+            $html = curl_exec($cURL);
+        }
         $info = curl_getinfo($cURL);
         $result->params([
             'url' => $url,
