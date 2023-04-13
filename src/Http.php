@@ -776,7 +776,7 @@ final class Http
         $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
 
         if (isset($option['save'])) {
-            $cOption[CURLOPT_FILE] = fopen($option['save'], 'w');
+            $cOption[CURLOPT_FILE] = fopen(root($option['save']), 'w');
             $cOption[CURLOPT_RETURNTRANSFER] = true;
         }
 
