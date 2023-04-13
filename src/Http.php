@@ -775,11 +775,9 @@ final class Http
         $cOption[CURLOPT_RETURNTRANSFER] = ($option['transfer'] ?? true);//返回文本流，若不指定则是直接打印
         $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
 
-        $forSave = false;
         if (isset($option['save'])) {
             $cOption[CURLOPT_FILE] = fopen($option['save'], 'w');
             $cOption[CURLOPT_RETURNTRANSFER] = true;
-            $forSave = true;
         }
 
         if (strtoupper(substr($url, 0, 5)) === "HTTPS") {
@@ -822,7 +820,7 @@ final class Http
         curl_setopt_array($cURL, $cOption);
         reTry:
         $time = microtime(true);
-        if ($forSave) {
+        if (isset($cOption[CURLOPT_FILE])) {
             $html = 'SAVE#' . $option['save'];
             $option['decode'] = 'text';
             curl_exec($cURL);

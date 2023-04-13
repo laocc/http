@@ -72,11 +72,13 @@ class HttpResult
         ];
         if ($key) return $val[$key];
 
-        $size = intval($this->_info['size_download'] ?? 0);
-        $type = $this->_info['content_type'] ?? '';
-        if ($size > $this->limitPrintSize) {
+        if (isset($this->_option[CURLOPT_FILE])) return $val;//下载模式，不处理html
+
+        if (intval($this->_info['size_download'] ?? 0) > $this->limitPrintSize) {
             $val['html'] = "下载内容超过1Kb，请通过RESULT->html()方式查询结果";
         }
+
+//        $type = $this->_info['content_type'] ?? '';
 //        if (!preg_match('/(text|xml|json|javascript|html)/i', $type)) {
 //            $val['html'] = "下载内容非文本格式：{$type}，请通过RESULT->html()方式查询结果";
 //        }
