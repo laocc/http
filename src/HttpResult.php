@@ -217,6 +217,7 @@ class HttpResult
         }
 
         $fstCode = $this->_html[0] ?? '';
+        $_data = null;
 
         switch ($this->_decode) {
 
@@ -224,8 +225,8 @@ class HttpResult
                 $str = preg_replace(["/([a-zA-Z_]+[a-zA-Z0-9_]*)\s*:/", "/:\s*'(.*?)'/"],
                     ['"\1":', ': "\1"'], $this->_html);
 
-                $this->_data = json_decode($str, true);
-                if (empty($this->_data)) {
+                $_data = json_decode($str, true);
+                if (empty($_data)) {
                     $this->_message = '请求结果jsObject无法转换为数组';
                     $this->_error = 500;
                 }
@@ -235,8 +236,8 @@ class HttpResult
             case 'json':
 
                 if ($fstCode === '{' or $fstCode === '[') {
-                    $this->_data = json_decode($this->_html, true);
-                    if (empty($this->_data)) {
+                    $_data = json_decode($this->_html, true);
+                    if (empty($_data)) {
                         $this->_message = '请求结果JSON无法转换为数组';
                         $this->_error = 500;
                     }
@@ -248,8 +249,8 @@ class HttpResult
                 break;
             case 'xml':
                 if ($fstCode === '<') {
-                    $this->_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
-                    if (empty($this->_data)) {
+                    $_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
+                    if (empty($_data)) {
                         $this->_message = '请求结果XML无法转换为数组';
                         $this->_error = 500;
                     }
@@ -263,23 +264,23 @@ class HttpResult
             case 'text':
             case 'txt':
                 //这几种情况，不尝试转换数组
-                $this->_data = $this->_html;
+                $_data = $this->_html;
                 break;
             default:
 
                 if ($fstCode === '{' or $fstCode === '[') {
-                    $this->_data = json_decode($this->_html, true);
-                    if (empty($this->_data)) {
+                    $_data = json_decode($this->_html, true);
+                    if (empty($_data)) {
                         $this->_message = '请求结果JSON无法转换为数组';
                         $this->_error = 500;
                     }
                 } else if ($fstCode === '<' and strpos($this->_html, 'html>') === false) {
                     try {
-                        $this->_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
+                        $_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
                     } catch (\Error $error) {
 
                     }
-                    if (empty($this->_data)) {
+                    if (empty($_data)) {
                         $this->_message = '请求结果XML无法转换为数组';
                         $this->_error = 500;
                     }
@@ -287,11 +288,17 @@ class HttpResult
 
         }
 
-        if (isset($this->_data['message'])) $this->_message = $this->_data['message'];
-        else if (isset($this->_data['errMsg'])) $this->_message = $this->_data['errMsg'];
-        else if (isset($this->_data['errmsg'])) $this->_message = $this->_data['errmsg'];
-        else if (isset($this->_data['msg'])) $this->_message = $this->_data['msg'];
-        else if (empty($this->_message)) $this->_message = 'ok';
+        if (is_array($_data)) {
+            $this->_data = $_data;
+            if (isset($_data['message'])) $this->_message = $_data['message'];
+            else if (isset($_data['errMsg'])) $this->_message = $_data['errMsg'];
+            else if (isset($_data['errmsg'])) $this->_message = $_data['errmsg'];
+            else if (isset($_data['msg'])) $this->_message = $_data['msg'];
+            else if (empty($this->_message)) $this->_message = 'ok';
+        } else {
+            $this->_message = '请求结果无法转换为数组，请直接调用->html()';
+            $this->_error = 500;
+        }
 
         return $this;
     }
