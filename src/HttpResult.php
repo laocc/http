@@ -73,6 +73,7 @@ class HttpResult
         if ($key) return $val[$key];
 
         if (isset($this->_option[CURLOPT_FILE])) return $val;//下载模式，不处理html
+        if ($this->_option['debug_html'] ?? 0) return $val;//强制显示全部html
 
         if (intval($this->_info['size_download'] ?? 0) > $this->limitPrintSize) {
             $val['html'] = "下载内容超过1Kb，请通过RESULT->html()方式查询结果";
@@ -203,6 +204,8 @@ class HttpResult
     public function decode(string $html, bool $mayEmpty = false): HttpResult
     {
         $this->_html = trim($html);
+        if ($this->_error) return $this;//请求本身已经出错
+
         if (empty($this->_html)) {
             if (!$mayEmpty) {//是否有可能为空
                 $this->_message = '请求结果为空';
@@ -260,10 +263,9 @@ class HttpResult
                 }
 
                 break;
-            case 'html':
-            case 'text':
+            case 'html': //这几种情况，不尝试转换数组
+            case 'text': //其实上面已经有拦截，进不到这里
             case 'txt':
-                //这几种情况，不尝试转换数组
                 $_data = $this->_html;
                 break;
             default:
