@@ -19,6 +19,7 @@ class HttpResult
 
     public array $_option = [];
     public array $_info = [];
+    public float $_start = 0;
     public float $_time = 0;
     public int $_code = 0;
     public int $_retry = 0;
@@ -33,7 +34,7 @@ class HttpResult
     public function __construct(array $option)
     {
         $this->_option = $option;
-        if (isset($option['size'])) $this->limitPrintSize = $option['size'];
+        if (isset($option['size'])) $this->limitPrintSize = intval($option['size']);
     }
 
     /**
@@ -62,6 +63,7 @@ class HttpResult
             'url' => $this->_url,
             'error' => $this->_error,
             'message' => $this->_message,
+            'start' => $this->_start,
             'time' => $this->_time,
             'decode' => $this->_decode,
             'retry' => $this->_retry,
@@ -76,7 +78,7 @@ class HttpResult
         if (isset($this->_option[CURLOPT_FILE])) return $val;//下载模式，不处理html
         if ($this->_option['debug_html'] ?? 0) return $val;//强制显示全部html
 
-        if (intval($this->_info['size_download'] ?? 0) > $this->limitPrintSize) {
+        if ($this->limitPrintSize > 0 and (intval($this->_info['size_download'] ?? 0) > $this->limitPrintSize)) {
             $val['html'] = "下载内容超过1Kb，请通过RESULT->html()方式查询结果";
         }
 
@@ -140,6 +142,8 @@ class HttpResult
     }
 
     /**
+     * 批量指定参数
+     *
      * @param array $value
      * @return $this
      */

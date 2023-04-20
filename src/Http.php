@@ -829,6 +829,7 @@ final class Http
         }
         $info = curl_getinfo($cURL);
         $result->params([
+            'start' => $time,
             'url' => $url,
             'info' => $info,
             'decode' => $option['decode'] ?? ($option['encode'] ?? ''),
