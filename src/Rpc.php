@@ -7,9 +7,9 @@ use esp\error\Error;
 
 class Rpc
 {
-    private $conf;
-    private $_encode = 'json';
-    private $_decode = 'json';
+    private array $conf;
+    private string $_encode = 'json';
+    private string $_decode = 'json';
 
     public function __construct(array $conf = null)
     {
