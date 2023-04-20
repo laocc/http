@@ -32,6 +32,7 @@ class HttpResult
 
     public function __construct(array $option)
     {
+        $this->_option = $option;
         if (isset($option['size'])) $this->limitPrintSize = $option['size'];
     }
 
