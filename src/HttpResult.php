@@ -18,6 +18,7 @@ class HttpResult
     public array $_header = [];
 
     public array $_option = [];
+    public array $_params = [];
     public array $_info = [];
     public float $_start = 0;
     public float $_time = 0;
@@ -33,7 +34,7 @@ class HttpResult
 
     public function __construct(array $option)
     {
-        $this->_option = $option;
+        $this->_params = $option;
         if (isset($option['size'])) $this->limitPrintSize = intval($option['size']);
     }
 
