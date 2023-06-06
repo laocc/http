@@ -29,6 +29,7 @@ class HttpResult
     public string $_html = '';
     public array $_data = [];
     private int $_thenRun = 0;
+    private $_post = '';
 
     private int $limitPrintSize = 1024;
 
