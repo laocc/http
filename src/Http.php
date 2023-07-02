@@ -13,7 +13,7 @@ final class Http
 {
     private array $option = [];
     private array $files = [];
-    private string $url;
+    private string $url = '';
     private \CURLFile $file;
     private $data;//要post的数据，可能是数组，或字串
 
