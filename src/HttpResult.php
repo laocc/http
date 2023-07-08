@@ -28,6 +28,7 @@ class HttpResult
 
     public string $_html = '';
     public array $_data = [];
+    public string $abnormal;//异常信息，只有发生异常时才带出
     private int $_thenRun = 0;
     private $_post = '';
 
@@ -76,6 +77,8 @@ class HttpResult
             'html' => $this->_html,
         ];
         if ($key) return $val[$key];
+
+        if (isset($this->abnormal)) $val['abnormal'] = $this->abnormal;
 
         if (isset($this->_option[CURLOPT_FILE])) return $val;//下载模式，不处理html
         if ($this->_option['debug_html'] ?? 0) return $val;//强制显示全部html
@@ -211,6 +214,12 @@ class HttpResult
     public function decode(string $html, bool $mayEmpty = false): HttpResult
     {
         $this->_html = trim($html);
+
+        if (mb_detect_encoding($this->_html) === false) {//非法字符检查，若存在则转换过滤
+            $this->abnormal = base64_encode($this->_html);
+            $this->_html = mb_convert_encoding($this->_html, 'UTF-8', 'UTF-8');
+        }
+
         if ($this->_error) return $this;//请求本身已经出错
 
         if (empty($this->_html)) {
