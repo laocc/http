@@ -38,6 +38,7 @@ class HttpResult
     {
         $this->_params = $option;
         if (isset($option['size'])) $this->limitPrintSize = intval($option['size']);
+        if (_CLI) $this->limitPrintSize = 0;
     }
 
     /**
@@ -78,7 +79,12 @@ class HttpResult
         ];
         if ($key) return $val[$key];
 
-        if (isset($this->abnormal)) $val['abnormal'] = $this->abnormal;
+        if (isset($this->abnormal)) {
+            $val['abnormal'] = [
+                'html_base64' => $this->abnormal,
+                'message' => '下载内容含有非法字符，请手工复制后base64_decode查看'
+            ];
+        }
 
         if (isset($this->_option[CURLOPT_FILE])) return $val;//下载模式，不处理html
         if ($this->_option['debug_html'] ?? 0) return $val;//强制显示全部html
@@ -87,10 +93,6 @@ class HttpResult
             $val['html'] = "下载内容超过1Kb，请通过RESULT->html()方式查询结果";
         }
 
-//        $type = $this->_info['content_type'] ?? '';
-//        if (!preg_match('/(text|xml|json|javascript|html)/i', $type)) {
-//            $val['html'] = "下载内容非文本格式：{$type}，请通过RESULT->html()方式查询结果";
-//        }
         return $val;
     }
 
