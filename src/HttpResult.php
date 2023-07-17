@@ -243,13 +243,15 @@ class HttpResult
         switch ($this->_decode) {
 
             case 'jsobject':
-                $str = preg_replace(["/([a-zA-Z_]+[a-zA-Z0-9_]*)\s*:/", "/:\s*'(.*?)'/"],
-                    ['"\1":', ': "\1"'], $this->_html);
-
+                $str = preg_replace(["/([a-zA-Z_]+[\w\_]*)\s*:/", "/:\s*'(.*?)'/"], ['"\1":', ': "\1"'], $this->_html);
                 $_data = json_decode($str, true);
                 if (empty($_data)) {
-                    $this->_message = '请求结果jsObject无法转换为数组';
-                    $this->_error = 500;
+                    //再原生json试一下
+                    $_data = json_decode($this->_html, true);
+                    if (empty($_data)) {
+                        $this->_message = '请求结果jsObject无法转换为数组';
+                        $this->_error = 500;
+                    }
                 }
 
                 break;
