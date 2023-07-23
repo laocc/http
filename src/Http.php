@@ -610,7 +610,17 @@ final class Http
                 }
                 $cOption[CURLOPT_RESOLVE] = ["{$urlDom[2]}:{$option['port']}:{$option['host']}"];
 
-                if (($option['port'] !== 443 && $option['port'] !== 80) && !strpos($urlDom[2], ':')) {
+                /**
+                 * 如果在 CURLOPT_RESOLVE 中指定了目标服务器的 IP 地址和 8000 端口号，
+                 * 而在 URL 中不带端口号，
+                 * 则 CURL 将使用 CURLOPT_RESOLVE 中指定的 IP 地址和 8000 端口号来建立连接和发送请求。
+                 * 这种方式可以规避目标防火墙对非标准端口的限制，
+                 * 因为 CURL 直接使用 IP 地址和端口号建立连接，不需要经过 DNS 解析和目标服务器的防火墙。
+                 */
+                $automaticPortPort = true;//自动添加端口号到URL
+                if (isset($option['automaticPort'])) $automaticPortPort = boolval($option['automaticPort']);
+
+                if (($option['port'] !== 443 && $option['port'] !== 80) && $automaticPortPort && !strpos($urlDom[2], ':')) {
                     $urlDom[2] = "{$urlDom[2]}:{$option['port']}";
                     $url = implode('/', $urlDom);
                 }
