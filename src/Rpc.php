@@ -10,17 +10,20 @@ class Rpc
     private array $conf;
     private string $_encode = 'json';
     private string $_decode = 'json';
+    private array $_allow = [];
 
     public function __construct(array $conf = null)
     {
-        $this->conf = $conf;
         if (is_null($conf)) {
             if (defined('_RPC')) {
-                $this->conf = _RPC;
+                $conf = _RPC;
             } else {
                 throw new Error('未指定rpc也未定义_RPC');
             }
         }
+
+        if (file_exists(_RUNTIME . '/master.lock')) $conf['ip'] = '127.0.0.1';
+        $this->conf = $conf;
     }
 
     public function encode(string $code): Rpc
@@ -35,24 +38,40 @@ class Rpc
         return $this;
     }
 
-    public function get(string $uri, string $key = null)
+    public function allow(int $code): Rpc
     {
-        $rpcObj = new Http();
-        return $rpcObj->rpc($this->conf)
-            ->encode($this->_encode)
-            ->decode($this->_decode)
-            ->get($uri)
-            ->data($key);
+        $this->_allow[] = $code;
+        return $this;
     }
 
-    public function post(string $uri, string $key = null)
+    public function get(string $uri, string $key = '')
     {
-        $rpcObj = new Http();
-        return $rpcObj->rpc($this->conf)
-            ->encode($this->_encode)
-            ->decode($this->_decode)
-            ->post($uri)
-            ->data($key);
+        return $this->request($uri, $key, false);
+    }
+
+    public function post(string $uri, string $key = '')
+    {
+        return $this->request($uri, $key, true);
+    }
+
+    public function request(string $uri, string $key, bool $isPost)
+    {
+        $option = [];
+        $option['encode'] = $this->_encode;
+        $option['decode'] = $this->_decode;
+        $option['ua'] = 'esp/http rpc/' . getenv('SERVER_ADDR') . ':' . getenv('SERVER_PORT');
+
+        $rpcObj = new Http($option);
+        $http = $rpcObj->rpc($this->conf);
+        if ($isPost) {
+            $request = $http->post($uri);
+        } else {
+            $request = $http->get($uri);
+        }
+
+        if ($err = $request->error(true, $this->_allow)) return $err;
+
+        return $request->data($key);
     }
 
 }
