@@ -55,6 +55,7 @@ final class Http
     {
         $host = ['host' => $rpc['host'], 'port' => $rpc['port'], 'ip' => $rpc['ip']];
         $this->url = sprintf('%s://%s:%s/%s', 'http', $host['host'], $host['port'], ltrim($uri, '/'));
+        $this->url = trim($this->url, '/');
         $this->option['host'] = [implode(':', $host)];
         $this->option['timeout'] = 3;
         $this->option['encode'] = 'json';

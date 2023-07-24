@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace esp\http;
 
-use esp\error\Error;
+use function esp\core\esp_error;
 
 class Rpc
 {
@@ -12,18 +12,18 @@ class Rpc
     private string $_decode = 'json';
     private array $_allow = [];
 
-    public function __construct(array $conf = null)
+    public function __construct(array $conf = [])
     {
-        if (is_null($conf)) {
+        if (empty($conf)) {
             if (defined('_RPC')) {
                 $conf = _RPC;
             } else {
-                throw new Error('未指定rpc也未定义_RPC');
+                esp_error('未指定rpc也未定义_RPC');
             }
         }
 
         if (file_exists(_RUNTIME . '/master.lock')) $conf['ip'] = '127.0.0.1';
-        $this->conf = $conf;
+        $this->conf = ['host' => $conf['host'], 'port' => $conf['port'], 'ip' => $conf['ip']];
     }
 
     public function encode(string $code): Rpc
@@ -44,34 +44,39 @@ class Rpc
         return $this;
     }
 
-    public function get(string $uri, string $key = '')
+    public function get(string $uri, array $data = [])
     {
-        return $this->request($uri, $key, false);
+        return $this->request($uri, $data, false);
     }
 
-    public function post(string $uri, string $key = '')
+    public function post(string $uri, array $data = [])
     {
-        return $this->request($uri, $key, true);
+        return $this->request($uri, $data, true);
     }
 
-    public function request(string $uri, string $key, bool $isPost)
+    public function request(string $uri, array $data, bool $isPost)
     {
         $option = [];
+        $option['host'] = [implode(':', $this->conf)];
+        $option['timeout'] = 5;
         $option['encode'] = $this->_encode;
         $option['decode'] = $this->_decode;
-        $option['ua'] = 'esp/http rpc/' . getenv('SERVER_ADDR') . ':' . getenv('SERVER_PORT');
+        $option['ua'] = 'esp/http http/cURL http/rpc rpc/1.0.1';
 
-        $rpcObj = new Http($option);
-        $http = $rpcObj->rpc($this->conf);
+        $url = sprintf('%s://%s:%s/%s', 'http', $this->conf['host'], $this->conf['port'], ltrim($uri, '/'));
+        $http = new Http($option);
+        if ($data) $http->data($data);
+
         if ($isPost) {
-            $request = $http->post($uri);
+            $request = $http->post($url);
         } else {
-            $request = $http->get($uri);
+            $request = $http->get($url);
         }
 
         if ($err = $request->error(true, $this->_allow)) return $err;
+        if ($this->_decode !== 'json') return $request->html();
 
-        return $request->data($key);
+        return $request->data();
     }
 
 }
