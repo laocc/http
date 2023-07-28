@@ -22,7 +22,10 @@ class Rpc
             }
         }
 
-        if (file_exists(_RUNTIME . '/master.lock')) $conf['ip'] = '127.0.0.1';
+        if (file_exists(_RUNTIME . '/master.lock') and ($conf['ip'] === ($conf['master'] ?? ''))) {
+            $conf['ip'] = '127.0.0.1';
+        }
+
         $this->conf = ['host' => $conf['host'], 'port' => $conf['port'], 'ip' => $conf['ip']];
     }
 
