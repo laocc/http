@@ -21,8 +21,9 @@ class Rpc
                 esp_error('未指定rpc也未定义_RPC');
             }
         }
+        $masterIP = defined('_RPC') ? _RPC['ip'] : ($conf['master'] ?? '');
 
-        if (file_exists(_RUNTIME . '/master.lock') and ($conf['ip'] === ($conf['master'] ?? ''))) {
+        if (file_exists(_RUNTIME . '/master.lock') and ($conf['ip'] === $masterIP)) {
             $conf['ip'] = '127.0.0.1';
         }
 
