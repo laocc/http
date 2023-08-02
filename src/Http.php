@@ -170,6 +170,7 @@ final class Http
         if (is_ip($host)) {
             $this->option['host'] = $host;
         } else {
+            //若不指定，则在后面会从URL中提取
             $this->option['host_domain'] = $host;
         }
         return $this;
@@ -535,6 +536,7 @@ final class Http
      * $option['ip']        客户端IP，相当于此cURL变成一个代理服务器
      * $option['lang']      语言，cn或en
      * $option['ssl']       SSL检查等级，0，1或2，默认2
+     * $option['host_domain']       有些情况下curl总是会缓存DNS，加此选项把域名改为IP可避免此情况，目前发现在php8.2中会这样
      * @throws Error
      */
     public function request(string $url = null): HttpResult
@@ -562,7 +564,7 @@ final class Http
             $cOption[CURLOPT_CERTINFO] = true;//TRUE 将在安全传输时输出 SSL 证书信息到 STDERR。
             $cOption[CURLOPT_FAILONERROR] = true;//当 HTTP 状态码大于等于 400，TRUE 将将显示错误详情。 默认情况下将返回页面，忽略 HTTP 代码。
             if (is_string($option['stderr'])) {
-                $cOption[CURLOPT_STDERR] = root($option['stderr']);//错误信息输出到文件，若不指定，则输出到屏幕
+                $cOption[CURLOPT_STDERR] = fopen(root($option['stderr']), 'w');//错误信息输出到文件，若不指定，则输出到屏幕
             }
         }
 
@@ -576,7 +578,6 @@ final class Http
             } else {
                 if (!is_ip($option['host'])) return $result->setError('Host必须是IP格式');
                 $urlDom = explode('/', $url);
-                if (!isset($option['host_domain'])) $option['host_domain'] = $urlDom[2];
                 $hasPort = strpos($urlDom[2], ':') > 0;
                 //从url中提取端口
                 if ($hasPort) {
@@ -588,6 +589,8 @@ final class Http
                     } else if ($option['port'] !== intval($dom[1])) {
                         return $result->setError('指定的port与URL中的port不一致');
                     }
+                } else {
+                    if (!isset($option['host_domain'])) $option['host_domain'] = $urlDom[2];
                 }
 
                 if (!isset($option['port'])) {
@@ -611,10 +614,13 @@ final class Http
                 if ($option['port'] === 443) $automaticPortPort = false;
                 if ($option['port'] === 80) $automaticPortPort = false;
                 if ($automaticPortPort) {
+                    if ($option['domain2ip'] ?? 0) $urlDom[2] = $option['host'];
                     $urlDom[2] = "{$urlDom[2]}:{$option['port']}";
                     $url = implode('/', $urlDom);
+                } else if ($option['domain2ip'] ?? 0) {
+                    $urlDom[2] = $option['host'];
+                    $url = implode('/', $urlDom);
                 }
-
             }
         }
 
