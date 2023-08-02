@@ -7,10 +7,12 @@ use function esp\core\esp_error;
 
 class Rpc
 {
-    private array $conf;
     private string $_encode = 'json';
     private string $_decode = 'json';
     private array $_allow = [];
+    private string $url;
+    public Http $http;
+    public HttpResult $result;
 
     public function __construct(array $conf = [])
     {
@@ -27,7 +29,25 @@ class Rpc
             $conf['ip'] = '127.0.0.1';
         }
 
-        $this->conf = ['host' => $conf['host'], 'port' => $conf['port'], 'ip' => $conf['ip']];
+        $option = [];
+        $option['host_domain'] = $conf['host'];
+        $option['host'] = $conf['ip'];
+        $option['port'] = $conf['port'];
+        $option['timeout'] = 5;
+        $option['dns'] = 0;
+//        $option['domain2ip'] = 1;
+        $option['encode'] = $this->_encode;
+        $option['decode'] = $this->_decode;
+        $option['ua'] = 'esp/http http/cURL http/rpc rpc/1.1.2';
+
+        $this->http = new Http($option);
+        $this->url = sprintf('%s://%s:%s', 'http', $conf['ip'], $conf['port']);
+    }
+
+    public function setUrl(string $url): Rpc
+    {
+        $this->url = $url;
+        return $this;
     }
 
     public function encode(string $code): Rpc
@@ -60,31 +80,18 @@ class Rpc
 
     public function request(string $uri, array $data, bool $isPost)
     {
-        $option = [];
-        $option['host_domain'] = $this->conf['host'];
-        $option['host'] = $this->conf['ip'];
-        $option['port'] = $this->conf['port'];
-        $option['timeout'] = 5;
-        $option['dns'] = 0;
-        $option['domain2ip'] = 1;
-        $option['encode'] = $this->_encode;
-        $option['decode'] = $this->_decode;
-        $option['ua'] = 'esp/http http/cURL http/rpc rpc/1.0.1';
-
-        $url = sprintf('%s://%s:%s/%s', 'http', $this->conf['host'], $this->conf['port'], ltrim($uri, '/'));
-        $http = new Http($option);
-        if ($data) $http->data($data);
+        if ($data) $this->http->data($data);
 
         if ($isPost) {
-            $request = $http->post($url);
+            $this->result = $this->http->post($this->url . $uri);
         } else {
-            $request = $http->get($url);
+            $this->result = $this->http->get($this->url . $uri);
         }
 
-        if ($err = $request->error(true, $this->_allow)) return $err;
-        if ($this->_decode !== 'json') return $request->html();
+        if ($err = $this->result->error(true, $this->_allow)) return $err;
+        if ($this->_decode !== 'json') return $this->result->html();
 
-        return $request->data();
+        return $this->result->data();
     }
 
 }
