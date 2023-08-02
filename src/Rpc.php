@@ -61,8 +61,12 @@ class Rpc
     public function request(string $uri, array $data, bool $isPost)
     {
         $option = [];
-        $option['host'] = [implode(':', $this->conf)];
+//        $option['host'] = [implode(':', $this->conf)];
+        $option['host_domain'] = $this->conf['host'];
+        $option['host'] = $this->conf['ip'];
+        $option['port'] = $this->conf['port'];
         $option['timeout'] = 5;
+        $option['dns'] = 0;
         $option['encode'] = $this->_encode;
         $option['decode'] = $this->_decode;
         $option['ua'] = 'esp/http http/cURL http/rpc rpc/1.0.1';

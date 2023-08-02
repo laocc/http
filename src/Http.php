@@ -47,25 +47,6 @@ final class Http
 
 
     /**
-     * @param string $uri
-     * @param array $rpc
-     * @return $this
-     */
-    public function rpc(array $rpc, string $uri = ''): Http
-    {
-        $host = ['host' => $rpc['host'], 'port' => $rpc['port'], 'ip' => $rpc['ip']];
-        $this->url = sprintf('%s://%s:%s/%s', 'http', $host['host'], $host['port'], ltrim($uri, '/'));
-        $this->url = trim($this->url, '/');
-        $this->option['host'] = [implode(':', $host)];
-        $this->option['timeout'] = 3;
-        $this->option['encode'] = 'json';
-        $this->option['decode'] = 'json';
-        $this->option['ua'] = 'esp RPC/1.0.0';
-        return $this;
-    }
-
-
-    /**
      * 请求目标
      * @param string $url
      * @return $this
@@ -186,7 +167,11 @@ final class Http
      */
     public function host(string $host): Http
     {
-        $this->option['host'] = $host;
+        if (is_ip($host)) {
+            $this->option['host'] = $host;
+        } else {
+            $this->option['host_domain'] = $host;
+        }
         return $this;
     }
 
@@ -591,10 +576,13 @@ final class Http
             } else {
                 if (!is_ip($option['host'])) return $result->setError('Host必须是IP格式');
                 $urlDom = explode('/', $url);
+                if (!isset($option['host_domain'])) $option['host_domain'] = $urlDom[2];
+                $hasPort = strpos($urlDom[2], ':') > 0;
                 //从url中提取端口
-                if (strpos($urlDom[2], ':')) {
+                if ($hasPort) {
                     $dom = explode(':', $urlDom[2]);
                     $urlDom[2] = $dom[0];
+                    if (!isset($option['host_domain'])) $option['host_domain'] = $urlDom[2];
                     if (!isset($option['port'])) {
                         $option['port'] = intval($dom[1]);
                     } else if ($option['port'] !== intval($dom[1])) {
@@ -618,10 +606,11 @@ final class Http
                  * 这种方式可以规避目标防火墙对非标准端口的限制，
                  * 因为 CURL 直接使用 IP 地址和端口号建立连接，不需要经过 DNS 解析和目标服务器的防火墙。
                  */
-                $automaticPortPort = true;//自动添加端口号到URL
+                $automaticPortPort = !$hasPort;//自动添加端口号到URL
                 if (isset($option['automaticPort'])) $automaticPortPort = boolval($option['automaticPort']);
-
-                if (($option['port'] !== 443 && $option['port'] !== 80) && $automaticPortPort && !strpos($urlDom[2], ':')) {
+                if ($option['port'] === 443) $automaticPortPort = false;
+                if ($option['port'] === 80) $automaticPortPort = false;
+                if ($automaticPortPort) {
                     $urlDom[2] = "{$urlDom[2]}:{$option['port']}";
                     $url = implode('/', $urlDom);
                 }
@@ -656,6 +645,8 @@ final class Http
             if ($cOption[CURLOPT_MAXREDIRS] < 2) $cOption[CURLOPT_MAXREDIRS] = 2;
             elseif ($cOption[CURLOPT_MAXREDIRS] > 10) $cOption[CURLOPT_MAXREDIRS] = 10;
         }
+
+        if (isset($option['host_domain'])) $option['headers'][] = "HOST: {$option['host_domain']}";
 
         if (isset($option['ip'])) {     //指定客户端IP
             $option['headers'][] = "CLIENT-IP: {$option['ip']}";
@@ -780,11 +771,15 @@ final class Http
         $cOption[CURLOPT_URL] = $url;            //接收页
         $cOption[CURLOPT_HEADER] = (isset($option['header']) and $option['header']);        //带回头信息
         $cOption[CURLOPT_DNS_CACHE_TIMEOUT] = ($option['dns'] ?? 120); //内存中保存DNS信息，默认120秒
-        $cOption[CURLOPT_CONNECTTIMEOUT] = $option['wait'] ?? 10;     //在发起连接前等待的时间，如果设置为0，则无限等待
+        $cOption[CURLOPT_CONNECTTIMEOUT] = ($option['wait'] ?? 20);     //在发起连接前等待的时间，如果设置为0，则无限等待
         $cOption[CURLOPT_TIMEOUT] = ($option['timeout'] ?? 10);       //允许执行的最长秒数，若用毫秒级，用TIMEOUT_MS
         $cOption[CURLOPT_IPRESOLVE] = ($option['ip_type'] ?? CURL_IPRESOLVE_V4); //指定使用IPv4解析
         $cOption[CURLOPT_RETURNTRANSFER] = ($option['transfer'] ?? true);//返回文本流，若不指定则是直接打印
-        $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的
+
+        if ($cOption[CURLOPT_DNS_CACHE_TIMEOUT] === 0) {
+            $cOption[CURLOPT_FRESH_CONNECT] = true;                         //强制新连接，不用缓存中的，禁用连接池
+            $cOption[CURLOPT_FORBID_REUSE] = true;                         //强制新连接，即使连接池中有可用的连接，也会强制关闭并创建新的连接
+        }
 
         if (isset($option['save'])) {
             $cOption[CURLOPT_FILE] = fopen(root($option['save']), 'w');
