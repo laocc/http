@@ -299,7 +299,7 @@ class HttpResult
                 } else if ($fstCode === '<' and strpos($this->_html, 'html>') === false) {
                     try {
                         $_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
-                    } catch (\Error $error) {
+                    } catch (\Error|\Exception $error) {
 
                     }
                     if (empty($_data)) {
