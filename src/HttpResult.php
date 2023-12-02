@@ -287,7 +287,8 @@ class HttpResult
             case 'html': //这几种情况，不尝试转换数组
             case 'text': //其实上面已经有拦截，进不到这里
             case 'txt':
-                $_data = $this->_html;
+//                $this->_data = $this->_html;
+                return $this;
                 break;
             default:
 
