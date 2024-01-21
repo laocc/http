@@ -851,7 +851,7 @@ final class Http
             'option' => $cOption,
         ]);
 
-        if ($decode === 'buffer') {
+        if (($decode === 'buffer') and isset($option['buffer'])) {
             $result->params(['buffer' => $option['buffer']]);
         }
 

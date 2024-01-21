@@ -293,13 +293,24 @@ class HttpResult
                 return $this;
                 break;
             case 'buffer': //这几种情况，不尝试转换数组
+
                 if (!isset($this->_buffer)) {
-                    $this->_buffer = '/tmp/buffer/' . date('YmdHis') . mt_rand();
+                    //未指定_buffer则把请求结果写入_buffer
+                    $this->_buffer = $this->_html;
+                    $this->_data = [
+                        'buffer' => $this->_buffer
+                    ];
+                    return $this;
                 }
+
+                //_buffer是个文件名
                 mk_dir($this->_buffer);
                 $file = fopen($this->_buffer, 'wb');
                 fwrite($file, $this->_html);
                 fclose($file);
+                $this->_data = [
+                    'buffer' => $this->_buffer
+                ];
                 return $this;
                 break;
             default:
