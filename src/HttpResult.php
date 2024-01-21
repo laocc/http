@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace esp\http;
 
+use function esp\helper\mk_dir;
 use function esp\helper\text;
 
 class HttpResult
@@ -15,6 +16,7 @@ class HttpResult
     public string $_message = '';
 
     public string $_decode = '';
+    public string $_buffer;//_buffer格式时保存的文件名
     public array $_header = [];
 
     public array $_option = [];
@@ -77,6 +79,7 @@ class HttpResult
             'header' => $this->_header,
             'html' => $this->_html,
         ];
+        if (isset($this->_buffer)) $val['buffer'] = $this->_buffer;
         if ($key) return $val[$key];
 
         if (isset($this->abnormal)) {
@@ -217,7 +220,7 @@ class HttpResult
     {
         $this->_html = trim($html);
 
-        if (mb_detect_encoding($this->_html) === false) {//非法字符检查，若存在则转换过滤
+        if (($this->_decode !== 'buffer') and (mb_detect_encoding($this->_html) === false)) {//非法字符检查，若存在则转换过滤
             $this->abnormal = base64_encode($this->_html);
             $this->_html = mb_convert_encoding($this->_html, 'UTF-8', 'UTF-8');
         }
@@ -283,11 +286,20 @@ class HttpResult
                 }
 
                 break;
-            case 'buffer': //这几种情况，不尝试转换数组
             case 'html': //这几种情况，不尝试转换数组
             case 'text': //其实上面已经有拦截，进不到这里
             case 'txt':
 //                $this->_data = $this->_html;
+                return $this;
+                break;
+            case 'buffer': //这几种情况，不尝试转换数组
+                if (!isset($this->_buffer)) {
+                    $this->_buffer = '/tmp/buffer/' . date('YmdHis') . mt_rand();
+                }
+                mk_dir($this->_buffer);
+                $file = fopen($this->_buffer, 'wb');
+                fwrite($file, $this->_html);
+                fclose($file);
                 return $this;
                 break;
             default:

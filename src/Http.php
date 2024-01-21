@@ -840,15 +840,21 @@ final class Http
             $html = curl_exec($cURL);
         }
         $info = curl_getinfo($cURL);
+        $decode = $option['decode'] ?? ($option['encode'] ?? 'json');
         $result->params([
             'start' => $time,
             'url' => $url,
             'info' => $info,
-            'decode' => $option['decode'] ?? ($option['encode'] ?? ''),
+            'decode' => $decode,
             'time' => microtime(true) - $time,
             'post' => $this->data,
             'option' => $cOption,
         ]);
+
+        if ($decode === 'buffer') {
+            $result->params(['buffer' => $option['buffer']]);
+        }
+
         if (($err = curl_errno($cURL)) > 0) {
 
             if (isset($option['retry']) and $option['retry'] > 0) {
