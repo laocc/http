@@ -915,8 +915,8 @@ final class Http
     {
         if (isset($headers['Content-Type'])) return true;
         if (isset($headers['content-type'])) return true;
-        foreach ($headers as $val) {
-            if (strpos(strtolower($val), 'content-type') === 0) return true;
+        foreach ($headers as $k => $val) {
+            if (strpos(strtolower(trim($val)), 'content-type') === 0) return true;
 //            if (str_starts_with(strtolower($val), 'content-type')) return true;
         }
         return false;
