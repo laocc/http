@@ -284,6 +284,7 @@ final class Http
     public function headers(string $header, string $value = null): Http
     {
         if (is_null($value)) {
+            if (is_string($header)) $header = explode("\n", $header);
             $this->option['headers'][] = $header;
         } else {
             $this->option['headers'][$header] = $value;
@@ -684,23 +685,24 @@ final class Http
                 break;
 
             case "POST":
+                $encode = ($option['encode'] ?? '');
+                if (!$this->headerHasContentType($option['headers'])) {
+                    if ($encode === 'json') {
+                        $option['headers']['Content-Type'] = "application/json;charset=UTF-8";
+                    } else if ($encode === 'xml') {
+                        $option['headers']['Content-Type'] = "application/xml;charset=UTF-8";
+                    } else {
+                        $option['headers']['Content-Type'] = "application/x-www-form-urlencoded;charset=UTF-8";
+                    }
+                }
+
                 if (is_array($this->data)) {
-                    $encode = ($option['encode'] ?? '');
                     if ($encode === 'json') {
                         $this->data = json_encode($this->data, 256 | 64);
-                        if (!isset($option['headers']['Content-Type'])) {
-                            $option['headers']['Content-Type'] = "application/json;charset=UTF-8";
-                        }
                     } else if ($encode === 'xml') {
                         $this->data = $this->xml($this->data);
-                        if (!isset($option['headers']['Content-Type'])) {
-                            $option['headers']['Content-Type'] = "application/xml;charset=UTF-8";
-                        }
                     } else {
                         $this->data = http_build_query($this->data);
-                        if (!isset($option['headers']['Content-Type'])) {
-                            $option['headers']['Content-Type'] = "application/x-www-form-urlencoded;charset=UTF-8";
-                        }
                     }
                 }
 
@@ -728,7 +730,7 @@ final class Http
                 if (!$hasCurlFile) {
                     throw new Error('传送文件时，data中至少要有一个= new \CURLFile($file)类型的文件，或用$http->file(...)传入文件');
                 }
-                if (!isset($option['headers']['Content-Type'])) {
+                if (!$this->headerHasContentType($option['headers'])) {
                     $option['headers']['Content-Type'] = "multipart/form-data;charset=UTF-8";
                 }
                 $option['headers'][] = "Expect: ";  //post大于1024时，会带100 ContinueHTTP标头的请求，加此指令禁止
@@ -906,6 +908,17 @@ final class Http
         }
 
         return $result->decode($html, $option['may_empty'] ?? false);
+    }
+
+    private function headerHasContentType(array $headers)
+    {
+        if (isset($headers['Content-Type'])) return true;
+        if (isset($headers['content-type'])) return true;
+        foreach ($headers as $k => $val) {
+            if (strtolower($k) === 'content-type') return true;
+            if (strstartswith(strtolower($val), 'content-type')) return true;
+        }
+        return false;
     }
 
     private function realHeaders(array $heads): array
