@@ -277,15 +277,16 @@ final class Http
     /**
      * 指定header，可多次指定
      *
-     * @param string $header
+     * @param $header
      * @param string|null $value
      * @return $this
      */
-    public function headers(string $header, string $value = null): Http
+    public function headers($header, string $value = null): Http
     {
+        if (!isset($this->option['headers'])) $this->option['headers'] = [];
         if (is_null($value)) {
             if (is_string($header)) $header = explode("\n", $header);
-            $this->option['headers'][] = $header;
+            array_push($this->option['headers'], ...$header);
         } else {
             $this->option['headers'][$header] = $value;
         }
@@ -914,9 +915,9 @@ final class Http
     {
         if (isset($headers['Content-Type'])) return true;
         if (isset($headers['content-type'])) return true;
-        foreach ($headers as $k => $val) {
-            if (strtolower($k) === 'content-type') return true;
-            if (strstartswith(strtolower($val), 'content-type')) return true;
+        foreach ($headers as $val) {
+            if (strpos(strtolower($val), 'content-type') === 0) return true;
+//            if (str_starts_with(strtolower($val), 'content-type')) return true;
         }
         return false;
     }
