@@ -911,12 +911,12 @@ final class Http
         return $result->decode($html, $option['may_empty'] ?? false);
     }
 
-    private function headerHasContentType(array $headers)
+    private function headerHasContentType(array $headers): bool
     {
         if (isset($headers['Content-Type'])) return true;
         if (isset($headers['content-type'])) return true;
         foreach ($headers as $k => $val) {
-            if (strpos(strtolower(trim($val)), 'content-type') === 0) return true;
+            if (str_starts_with(strtolower(trim(strval($val))), 'content-type')) return true;
 //            if (str_starts_with(strtolower($val), 'content-type')) return true;
         }
         return false;
