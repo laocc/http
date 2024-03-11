@@ -553,7 +553,13 @@ final class Http
             return $result->setError('目标API须以Http开头');
         }
 
-        if (!isset($option['headers'])) $option['headers'] = array();
+        if (!isset($option['headers'])) {
+            if (isset($option['header']) and is_array($option['header'])) {
+                return $result->setError('header不可为array，请改为headers');
+            }
+
+            $option['headers'] = array();
+        }
         if (!is_array($option['headers'])) $option['headers'] = [$option['headers']];
 
         $cOption = [];
