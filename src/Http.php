@@ -342,7 +342,7 @@ final class Http
     public function cookies(string $cookies = null)
     {
         if (is_null($cookies)) {
-            if (substr($this->option['cookies'] ?? '', 0, 1) === '/') {
+            if (str_starts_with($this->option['cookies'] ?? '', '/')) {
                 return file_get_contents($this->option['cookies']);
             } else {
                 return $this->option['cookies'];
@@ -471,7 +471,7 @@ final class Http
         if (!$url) return $this->url;
         if ($url[0] === '/') {
             $this->url = $this->url . $url;
-        } else if (substr($url, 0, 4) === 'http') {
+        } else if (str_starts_with($url, 'http')) {
             $this->url = $url;
         } else {
             $this->url = "{$this->url}/{$url}";
@@ -561,6 +561,10 @@ final class Http
             $option['headers'] = array();
         }
         if (!is_array($option['headers'])) $option['headers'] = [$option['headers']];
+
+        foreach ($option['headers'] as $hk => $hv) {
+            if (!is_string($hv)) return $result->setError('Headers的值只能为String');
+        }
 
         $cOption = [];
 
