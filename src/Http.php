@@ -16,6 +16,7 @@ final class Http
     private string $url = '';
     private \CURLFile $file;
     private $data;//要post的数据，可能是数组，或字串
+    private bool $ConvertUnderline = true;
 
     public function __construct($param = null, array $option = [])
     {
@@ -562,10 +563,6 @@ final class Http
         }
         if (!is_array($option['headers'])) $option['headers'] = [$option['headers']];
 
-        foreach ($option['headers'] as $hk => $hv) {
-            if (!is_string($hv)) return $result->setError('Headers的值只能为String');
-        }
-
         $cOption = [];
 
         /**
@@ -779,6 +776,8 @@ final class Http
             $cOption[CURLOPT_ENCODING] = "gzip, deflate";
         }
 
+        if (($option['underline'] ?? true) === false) $this->ConvertUnderline = false;
+
         if (!empty($option['headers'])) {
             $cOption[CURLOPT_HTTPHEADER] = $this->realHeaders($option['headers']);
         }
@@ -948,11 +947,18 @@ final class Http
         return $heads;
     }
 
+    public function setUnderLine(bool $val = false)
+    {
+        $this->ConvertUnderline = $val;
+        return $this;
+    }
+
     private function Camelize(string $str): string
     {
+        if ($this->ConvertUnderline) $str = str_replace('_', '-', $str);
         return implode('-', array_map(function ($s) {
             return ucfirst($s);
-        }, explode('-', str_replace('_', '-', strtolower($str)))));
+        }, explode('-', strtolower($str))));
     }
 
     /**
