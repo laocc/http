@@ -947,7 +947,7 @@ final class Http
         return $heads;
     }
 
-    public function setUnderLine(bool $val = false)
+    public function setUnderline(bool $val = false)
     {
         $this->ConvertUnderline = $val;
         return $this;
