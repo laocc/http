@@ -692,6 +692,7 @@ final class Http
                 }
                 break;
 
+            case "PUT" :
             case "POST":
                 $encode = ($option['encode'] ?? '');
                 if (!$this->headerHasContentType($option['headers'])) {
@@ -748,7 +749,6 @@ final class Http
                 break;
 
             case "HEAD" :   //这三种不常用，使用前须确认对方是否接受
-            case "PUT" :
             case "DELETE":
                 //不确定服务器支持这个自定义方法则不要使用它。
                 break;
