@@ -63,7 +63,7 @@ class HttpResult
      * @param string|null $key
      * @return array|mixed
      */
-    public function info(string $key = null)
+    public function info(string $key = null): mixed
     {
         $val = [
             'url' => $this->_url,
