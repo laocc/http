@@ -15,7 +15,7 @@ final class Http
     private array $files = [];
     private string $url = '';
     private \CURLFile $file;
-    private $data;//要post的数据，可能是数组，或字串
+    private mixed $data;//要post的数据，可能是数组，或字串
     private bool $ConvertUnderline = true;
 
     public function __construct($param = null, array $option = [])
@@ -858,7 +858,7 @@ final class Http
             'url' => $url,
             'info' => $info,
             'decode' => $decode,
-            'time' => microtime(true) - $time,
+            'time_used' => (microtime(true) - $time),
             'post' => $this->data,
             'option' => $cOption,
         ]);

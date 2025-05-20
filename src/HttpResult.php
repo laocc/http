@@ -25,14 +25,14 @@ class HttpResult
     public float $_start = 0;
     public float $_time = 0;
     public int $_code = 0;
-    public int $_retry = 0;
+    public int $_retry = 0;//重试次
     public string $_url = '';
 
     public string $_html = '';
     public array $_data = [];
     public string $abnormal;//异常信息，只有发生异常时才带出
     private int $_thenRun = 0;
-    private $_post = '';
+    private mixed $_post = null;
 
     private int $limitPrintSize = 1024;
 
@@ -67,18 +67,20 @@ class HttpResult
     {
         $val = [
             'url' => $this->_url,
-            'error' => $this->_error,
+            'post' => $this->_post,
+            'html' => $this->_html,
+            'header' => $this->_header,
             'message' => $this->_message,
             'start' => $this->_start,
-            'time' => $this->_time,
+            'running' => ($this->_time * 1000) . 'ms',
+            'error' => $this->_error,
             'decode' => $this->_decode,
             'retry' => $this->_retry,
             'code' => $this->_code,
             'option' => $this->_option,
             'info' => $this->_info,
-            'header' => $this->_header,
-            'html' => $this->_html,
         ];
+        if (is_null($val['post'])) unset($val['post']);
         if (isset($this->_buffer)) $val['buffer'] = $this->_buffer;
         if ($key) return $val[$key];
 
