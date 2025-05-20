@@ -858,7 +858,7 @@ final class Http
             'url' => $url,
             'info' => $info,
             'decode' => $decode,
-            'time_used' => (microtime(true) - $time),
+            'time' => (microtime(true) - $time),
             'post' => $this->data,
             'option' => $cOption,
         ]);
