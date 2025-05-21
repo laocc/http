@@ -15,7 +15,7 @@ final class Http
     private array $files = [];
     private string $url = '';
     private \CURLFile $file;
-    private mixed $data;//要post的数据，可能是数组，或字串
+    private mixed $data = null;//要post的数据，可能是数组，或字串
     private bool $ConvertUnderline = true;
 
     public function __construct($param = null, array $option = [])
