@@ -33,7 +33,7 @@ class Rpc
         $option['host_domain'] = $conf['host'];
         $option['host'] = $conf['ip'];
         $option['port'] = $conf['port'];
-        $option['timeout'] = 5;
+        $option['timeout'] = intval($conf['timeout'] ?? 5);
         $option['dns'] = 0;
 //        $option['domain2ip'] = 1;
         $option['encode'] = $this->_encode;
@@ -76,6 +76,11 @@ class Rpc
     public function post(string $uri, array $data = [])
     {
         return $this->request($uri, $data, true);
+    }
+
+    public function debug(callable $fun): void
+    {
+        $fun($this->result);
     }
 
     public function request(string $uri, array $data, bool $isPost)
