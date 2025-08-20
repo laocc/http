@@ -21,6 +21,7 @@ class HttpResult
 
     public array $_option = [];
     public array $_params = [];
+    public array $_time_used = [];
     public array $_info = [];
     public float $_start = 0;
     public float $_time = 0;
@@ -72,13 +73,13 @@ class HttpResult
             'header' => $this->_header,
             'message' => $this->_message,
             'start' => $this->_start,
-            'running' => ($this->_time * 1000) . 'ms',
             'error' => $this->_error,
             'decode' => $this->_decode,
             'retry' => $this->_retry,
             'code' => $this->_code,
             'option' => $this->_option,
             'info' => $this->_info,
+            'time' => $this->_time_used,
         ];
         if (is_null($val['post'])) unset($val['post']);
         if (isset($this->_buffer)) $val['buffer'] = $this->_buffer;
@@ -202,6 +203,16 @@ class HttpResult
     public function html(): string
     {
         return $this->_html;
+    }
+
+    public function time(): array
+    {
+        return $this->_time_used;
+    }
+
+    public function setTime(array $time): void
+    {
+        $this->_time_used = $time;
     }
 
     /**

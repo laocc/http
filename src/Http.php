@@ -851,6 +851,7 @@ final class Http
         } else {
             $html = curl_exec($cURL);
         }
+        $timeUsed = (microtime(true) - $time);
         $info = curl_getinfo($cURL);
         $decode = $option['decode'] ?? ($option['encode'] ?? 'json');
         $result->params([
@@ -858,9 +859,16 @@ final class Http
             'url' => $url,
             'info' => $info,
             'decode' => $decode,
-            'time' => (microtime(true) - $time),
+            'time' => $timeUsed,
             'post' => $this->data,
             'option' => $cOption,
+        ]);
+        $result->setTime([
+            '解析DNS' => ($info['namelookup_time'] ?? 0) * 1000,
+            '建立连接' => ($info['connect_time'] ?? 0) * 1000,
+            '握手SSL' => ($info['appconnect_time_us'] ?? 0) / 1000,
+            '数据传输' => ($info['starttransfer_time'] ?? 0) * 1000,
+            '累计耗时' => ($info['total_time'] ?? 0) * 1000,
         ]);
 
         if (($decode === 'buffer') and isset($option['buffer'])) {
