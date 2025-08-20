@@ -6,6 +6,7 @@ namespace esp\http;
 use esp\error\Error;
 use esp\helper\library\ext\Xml;
 use function esp\helper\mk_dir;
+use function esp\helper\rnd;
 use function esp\helper\root;
 use function esp\helper\is_ip;
 
@@ -864,11 +865,11 @@ final class Http
             'option' => $cOption,
         ]);
         $result->setTime([
-            '解析DNS' => ($info['namelookup_time'] ?? 0) * 1000,
-            '建立连接' => ($info['connect_time'] ?? 0) * 1000,
-            '握手SSL' => ($info['appconnect_time_us'] ?? 0) / 1000,
-            '数据传输' => ($info['starttransfer_time'] ?? 0) * 1000,
-            '累计耗时' => ($info['total_time'] ?? 0) * 1000,
+            '解析DNS' => rnd(($info['namelookup_time'] ?? 0) * 1000, 3) . 'ms',
+            '建立连接' => rnd(($info['connect_time'] ?? 0) * 1000, 3) . 'ms',
+            '握手SSL' => rnd(($info['appconnect_time_us'] ?? 0) / 1000, 3) . 'ms',
+            '数据传输' => rnd(($info['starttransfer_time'] ?? 0) * 1000, 3) . 'ms',
+            '累计耗时' => rnd(($info['total_time'] ?? 0) * 1000, 3) . 'ms',
         ]);
 
         if (($decode === 'buffer') and isset($option['buffer'])) {
