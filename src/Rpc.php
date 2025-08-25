@@ -57,6 +57,12 @@ class Rpc
         return $this;
     }
 
+    public function setOption(string $key, string $value): Rpc
+    {
+        $this->http->set($key, $value);
+        return $this;
+    }
+
     public function setUrl(string $url): Rpc
     {
         $this->url = $url;
