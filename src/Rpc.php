@@ -7,11 +7,9 @@ use function esp\core\esp_error;
 
 class Rpc
 {
-    private string $_encode = 'json';
-    private string $_decode = 'json';
+    private string $token = '';
     private array $_allow = [];
     private string $url;
-    private string $token;
     public Http $http;
     public HttpResult $result;
 
@@ -37,8 +35,8 @@ class Rpc
         $option['timeout'] = intval($conf['timeout'] ?? 5);
         $option['dns'] = intval($conf['dns'] ?? 0);
         $option['domain2ip'] = intval($conf['domain2ip'] ?? 0);
-        $option['encode'] = $this->_encode;
-        $option['decode'] = $this->_decode;
+        $option['encode'] = 'json';
+        $option['decode'] = 'json';
         $option['ua'] = 'esp/http http/cURL http/rpc rpc/1.1.2';
         if (isset($conf['token'])) $this->token = $conf['token'];
         if (isset($conf['ua'])) $option['ua'] = $conf['ua'];
@@ -47,6 +45,12 @@ class Rpc
         $this->url = sprintf('%s://%s:%s', 'http', $conf['ip'], $conf['port']);
     }
 
+    /**
+     * 设置Token，不设不加sign
+     *
+     * @param string $token
+     * @return $this
+     */
     public function token(string $token)
     {
         $this->token = $token;
@@ -59,15 +63,28 @@ class Rpc
         return $this;
     }
 
+    /**
+     * 增加额外的headers
+     *
+     * @param string $key
+     * @param string $value
+     * @return $this
+     */
+    public function headers(string $key, string $value): Rpc
+    {
+        $this->http->headers($key, $value);
+        return $this;
+    }
+
     public function encode(string $code): Rpc
     {
-        $this->_encode = $code;
+        $this->http->encode($code);
         return $this;
     }
 
     public function decode(string $code): Rpc
     {
-        $this->_decode = $code;
+        $this->http->decode($code);
         return $this;
     }
 
@@ -97,10 +114,19 @@ class Rpc
         return md5("{$rand}.{$json}.{$this->token}");
     }
 
+    /**
+     * 签名验证
+     *
+     * @param string $json
+     * @return bool
+     */
     public function signTrue(string $json): bool
     {
         $rand = getenv('HTTP_RAND');
         $sign = getenv('HTTP_SIGN');
+        if (empty($rand) or empty($sign)) return false;
+        if (empty($this->token)) return false;
+
         return strval($sign) === $this->sign($json, $rand);
     }
 
@@ -126,7 +152,7 @@ class Rpc
         }
 
         if ($err = $this->result->error(true, $this->_allow)) return $err;
-        if ($this->_decode !== 'json') return $this->result->html();
+        if ($this->result->_decode !== 'json') return $this->result->html();
 
         return $this->result->data();
     }
