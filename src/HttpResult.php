@@ -266,7 +266,7 @@ class HttpResult
                     $_data = json_decode($this->_html, true);
                     if (empty($_data)) {
                         $this->_message = '请求结果jsObject无法转换为数组';
-                        $this->_error = 500;
+                        $this->_error = 501;
                     }
                 }
 
@@ -278,11 +278,11 @@ class HttpResult
                     $_data = json_decode($this->_html, true);
                     if (empty($_data)) {
                         $this->_message = '请求结果JSON无法转换为数组';
-                        $this->_error = 500;
+                        $this->_error = 502;
                     }
                 } else {
                     $this->_message = '请求结果不是json格式';
-                    $this->_error = 500;
+                    $this->_error = 502;
                 }
 
                 break;
@@ -291,11 +291,11 @@ class HttpResult
                     $_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
                     if (empty($_data)) {
                         $this->_message = '请求结果XML无法转换为数组';
-                        $this->_error = 500;
+                        $this->_error = 503;
                     }
                 } else {
                     $this->_message = '请求结果不是XML格式';
-                    $this->_error = 500;
+                    $this->_error = 503;
                 }
 
                 break;
@@ -332,9 +332,9 @@ class HttpResult
                     $_data = json_decode($this->_html, true);
                     if (empty($_data)) {
                         $this->_message = '请求结果JSON无法转换为数组';
-                        $this->_error = 500;
+                        $this->_error = 504;
                     }
-                } else if ($fstCode === '<' and strpos($this->_html, 'html>') === false) {
+                } else if ($fstCode === '<' and !str_contains($this->_html, 'html>')) {
                     try {
                         $_data = (array)simplexml_load_string(trim($this->_html), 'SimpleXMLElement', LIBXML_NOCDATA);
                     } catch (\Error|\Exception $error) {
@@ -342,7 +342,7 @@ class HttpResult
                     }
                     if (empty($_data)) {
                         $this->_message = '请求结果XML无法转换为数组';
-                        $this->_error = 500;
+                        $this->_error = 504;
                     }
                 }
 
@@ -357,7 +357,7 @@ class HttpResult
             else if (empty($this->_message)) $this->_message = 'ok';
         } else {
             $this->_message = '请求结果无法转换为数组，请直接调用->html()';
-            $this->_error = 500;
+            $this->_error = 510;
         }
 
         return $this;
